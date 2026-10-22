@@ -14,6 +14,7 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 - **Each thing in the room.** On and off, lights brighter and dimmer, heat pumps warmer and cooler by half a degree.
 - **Works inside the house.** Nothing goes through the internet, and every device still works with its own remote and app.
 - **The way back.** Home Assistant's own screens are under *Settings*, *Advanced*, for anything Beyond Home doesn't do yet.
+- **Your home on the TV.** [Beyond™ TV](https://github.com/YeahBuddyNZ/Beyond.TV) gets a Home row: every room's line, its Moments and the one remote, from the sofa. The TV finds the box by itself and shows a code; type it in *Settings*, *TVs*. Taking a TV off there stops it straight away.
 
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 
@@ -23,6 +24,8 @@ The plan, with what NZ homes have and what works without the cloud, is in [docs/
 2. In Home Assistant: *Settings*, *Apps* (called *Add-ons* on older versions), *App store*, the three dots, *Repositories*, and add `https://github.com/YeahBuddyNZ/Beyond-Home`.
 3. Install **Beyond Home** and turn on *Show in sidebar*. It builds on the box the first time, which takes a few minutes.
 4. Let Home Assistant find your TV, receiver and lights (it offers them under *Settings*, *Devices*), and put each one in a room (an *Area*). Beyond Home shows them room by room.
+
+Beyond TV talks to the box on port 8098 inside the house (Home Assistant shows it under the app's *Network* settings). It only answers addresses inside the house.
 
 Not yet tried on a real Home Assistant box: the first one is the test.
 

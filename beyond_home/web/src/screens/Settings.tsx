@@ -1,12 +1,14 @@
 import { ExternalLinkIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { TvsCard } from "@/components/tvs-card"
 import { PageTitle, Shell } from "./Shell"
 
 export function Settings() {
   return (
     <Shell tab="settings">
       <PageTitle title="Settings" />
+      <TvsCard />
       <Card>
         <CardHeader>
           <CardTitle>Rooms</CardTitle>

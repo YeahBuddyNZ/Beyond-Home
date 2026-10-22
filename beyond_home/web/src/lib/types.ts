@@ -17,3 +17,4 @@ export type Thing = {
 export type Room = { id: string; name: string; things: Thing[] }
 export type Snapshot = { rooms: Room[]; time: number }
 export type Call = { domain: string; service: string; data: Record<string, unknown> }
+export type PairedTv = { id: string; name: string; added: number }

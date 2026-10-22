@@ -11,6 +11,9 @@ RUN npm run build:hub
 
 FROM $BUILD_FROM
 RUN apk add --no-cache nodejs
-COPY server/ /app/
+# The server reads the screens' decisions (web/src/lib.js) for the TVs, so it keeps the same folders as the repo.
+COPY server/ /app/server/
+COPY web/package.json /app/web/package.json
+COPY web/src/lib.js /app/web/src/lib.js
 COPY --from=web /web/dist /app/www
-CMD ["node", "/app/main.mjs"]
+CMD ["node", "/app/server/main.mjs"]

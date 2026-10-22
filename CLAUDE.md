@@ -24,6 +24,12 @@ Tagline "Free your world". Plan: docs/plan.md.
 - `server/main.mjs` only answers Home Assistant's ingress gateway (172.30.32.2). Two routes: `GET api/snapshot`
   (areas through the template API plus states, shaped by `snapshot.mjs`) and `POST api/act` (service calls, every one
   checked by `allow.mjs` before any is sent). A new kind of call goes in `allow.mjs` and in a test.
+- `server/tvs.mjs` is the TVs' door, a second server on port 8098 (`config.yaml` `ports`), private addresses only, CORS
+  `*`, no cookies. `GET /tv/hi` says it is Beyond Home (how a TV finds the box), `POST /tv/hello` starts pairing (the TV
+  keeps a secret, the box keeps its sha256 in `/data/tvs.json`), the code is typed in the app (Settings, TVs:
+  `api/tvs`, `api/tvs/pair`, `api/tvs/remove`), then `GET /tv/snapshot` and `POST /tv/act` with `Bearer <id>.<secret>`.
+  A TV asks for named things (a moment, volume, mute, power, one thing on or off in that room); the box builds the
+  calls with `web/src/lib.js` and `allow.mjs`, so the Dockerfile ships `lib.js` beside the server.
 - `web/` is React 19, Vite and Tailwind v4 with ReUI (style `base-nova` on Base UI), copied from Beyond Gateway. Every
   visible part comes from `components/ui` or `components/reui` (installed output: compose, never edit).
 - Only `web/src/api.ts` talks to the box (a test checks). Pure decisions stay in `web/src/lib.js`, plain JavaScript so
