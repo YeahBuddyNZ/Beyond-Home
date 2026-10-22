@@ -35,3 +35,60 @@ Home Assistant underneath, Beyond on top, the same move as Beyond Gateway (OpenW
 | Mitsubishi heat pumps | Cloud by default; local with an adapter a technician fits |
 | Daikin | Newer units yes |
 | Panasonic, Fujitsu | Cloud; IR blaster as a fallback |
+
+## The everything hub (Kyle, 23/10/2026)
+
+Kyle widened the brief: energy, a sustainable home, the home on the TV, and every media brand linked in. It stays one
+hub: Home Assistant already holds all of it, so these are new screens in the Beyond app, not new engines.
+
+### Every media brand
+
+The one remote already treats any `media_player` the same way, so a new brand is a Home Assistant integration plus
+the right words, never new Beyond code. What works inside the house:
+
+| Brand | How |
+|---|---|
+| Yamaha (receivers, MusicCast) | Yamaha Extended Control |
+| Denon, Marantz (HEOS) | HEOS, local |
+| Sonos | Local |
+| Bose SoundTouch | Local; newer Bose speakers vary |
+| Bluesound, NAD | BluOS, local |
+| JBL (Authentics, newer Bar models) | Through Google Cast or AirPlay, when the speaker has it |
+| Older JBL soundbars | No network control: HDMI-CEC from the TV or an IR blaster |
+| Anything with Google Cast or AirPlay 2 | Cast is controllable; AirPlay 2 can be played to |
+
+JBL is the honest one: it has no control of its own over the network, so what a JBL can do depends on whether that
+model has Cast built in. The app should say so in plain words when somebody adds one.
+
+### Energy and a sustainable home
+
+Home Assistant's energy dashboard does the counting; Beyond shows it as one line and one choice.
+
+- **What the house is using now** needs a meter that answers inside the house. NZ smart meters belong to the
+  metering company and give no live feed to the home: retailers show half-hourly use a day late in their own apps.
+  MBIE is exploring a consumer data right for electricity, which may change that; until then live use comes from:
+  - a clamp monitor in the switchboard (Shelly Pro 3EM, Emporia Vue, IoTaWatt), **fitted by an electrician**;
+  - a solar inverter or battery that reports locally (Fronius, SolarEdge, Enphase, Sungrow and others);
+  - plugs that measure (Shelly, Tapo and Matter plugs) for single appliances.
+- **The big NZ loads** are the hot water cylinder, heat pumps and an EV. Beyond can schedule what the family already
+  controls (heat pumps, EV chargers with local control such as Wallbox and Zappi). Hot water on ripple control
+  belongs to the lines company and is not ours to touch.
+- **Sustainable, in plain words:** "Using a lot right now", "Sunny, the panels are covering the house", "The heat
+  pump in the empty room is on". The NZ grid is mostly renewable already, so the useful nudge is cost and peak
+  times on the family's own plan, not guilt.
+- Never touch wiring, never change the power plan, and never claim a saving we can't measure.
+
+### The home on the TV
+
+Beyond TV owns the screens; Beyond Home owns the data and the calls. The TV gets the same snapshot the app uses
+(rooms, what's on, energy now) and sends the same allow-listed calls, over the house network.
+
+- The box gets a second door for the TV: paired once with a code shown in the Beyond app, the TV then holds its own
+  secret (only a hash kept on the box), exactly the pattern Beyond Family uses for TVs. Ingress stays as it is.
+- First screens on the TV: a Home row (rooms, one tap Moments), the one remote driving the receiver, and an energy
+  card. A 3D view of the home comes later and borrows Beyond Family's house map once a house has one.
+
+### Order
+
+These slot into the stages above: more brands and the energy line come with stage 1 (the box and the app), the TV
+door and Home row are stage 2, control from away stays stage 3.
