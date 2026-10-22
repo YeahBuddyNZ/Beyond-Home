@@ -83,8 +83,10 @@ Home Assistant's energy dashboard does the counting; Beyond shows it as one line
 Beyond TV owns the screens; Beyond Home owns the data and the calls. The TV gets the same snapshot the app uses
 (rooms, what's on, energy now) and sends the same allow-listed calls, over the house network.
 
-- The box gets a second door for the TV: paired once with a code shown in the Beyond app, the TV then holds its own
-  secret (only a hash kept on the box), exactly the pattern Beyond Family uses for TVs. Ingress stays as it is.
+- The box gets a second door for the TV: the TV shows a code, somebody types it in the Beyond app (Settings, TVs),
+  and the TV then holds its own secret (only a hash kept on the box), exactly the pattern Beyond Family uses for TVs.
+  Ingress stays as it is. Built 23/10/2026 (`server/tvs.mjs`, port 8098): the TV never sends a service call, only a
+  named ask the box turns into allow-listed calls.
 - First screens on the TV: a Home row (rooms, one tap Moments), the one remote driving the receiver, and an energy
   card. A 3D view of the home comes later and borrows Beyond Family's house map once a house has one.
 

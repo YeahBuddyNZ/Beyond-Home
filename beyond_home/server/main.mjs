@@ -3,15 +3,18 @@
 // No packages: Node's own http and fetch.
 
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { refuse } from './allow.mjs';
 import { ROOMS_TEMPLATE, buildSnapshot } from './snapshot.mjs';
+import { approve, listTvs, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
 
 const PORT = Number(process.env.PORT || 8099);
 const WWW = process.env.WWW || '/app/www';
 const HA = process.env.HA_URL || 'http://supervisor/core/api';
 const TOKEN = process.env.SUPERVISOR_TOKEN || '';
+const TV_PORT = Number(process.env.TV_PORT || 8098);
+const DATA = process.env.DATA || '/data';
 const INGRESS = new Set(['172.30.32.2', '::ffff:172.30.32.2', '127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json' };
 
@@ -29,8 +32,17 @@ async function snapshot() {
 	return { ...buildSnapshot(areas, states), time: Math.floor(Date.now() / 1000) };
 }
 
-const send = (res, code, body, type = 'application/json') => {
-	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+// Paired TVs, kept in the app's own folder on the box so they survive an update.
+const STATE = join(DATA, 'tvs.json');
+let state = { tvs: [], waiting: [] };
+const loaded = readFile(STATE, 'utf8').then((t) => (state = { waiting: [], ...JSON.parse(t) }), () => {});
+async function save() {
+	await writeFile(STATE + '.new', JSON.stringify({ tvs: state.tvs }));
+	await rename(STATE + '.new', STATE);
+}
+
+const send = (res, code, body, type = 'application/json', extra = {}) => {
+	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
 	res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
 
@@ -63,6 +75,19 @@ createServer(async (req, res) => {
 			for (const c of calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
 			return send(res, 200, { ok: true });
 		}
+		if (path === '/api/tvs' && req.method === 'GET') return (await loaded, send(res, 200, { tvs: listTvs(state) }));
+		if (path === '/api/tvs/pair' && req.method === 'POST') {
+			await loaded;
+			const why = approve(state, JSON.parse(await readBody(req)).code);
+			if (why) return send(res, 400, { error: why });
+			await save();
+			return send(res, 200, { tvs: listTvs(state) });
+		}
+		if (path === '/api/tvs/remove' && req.method === 'POST') {
+			await loaded;
+			if (remove(state, JSON.parse(await readBody(req)).id)) await save();
+			return send(res, 200, { tvs: listTvs(state) });
+		}
 		if (req.method !== 'GET') return send(res, 405, { error: 'No' });
 		const file = normalize(join(WWW, path === '/' ? 'index.html' : path));
 		if (!file.startsWith(WWW + '/')) return send(res, 404, { error: 'Not found' });
@@ -74,3 +99,54 @@ createServer(async (req, res) => {
 		return send(res, 502, { error: 'Home Assistant didn’t answer. Try again in a moment.' });
 	}
 }).listen(PORT, () => console.log('Beyond Home on ' + PORT));
+
+// The TVs' door, on the house network. Only private addresses (a port forwarded from the internet gets nothing),
+// no cookies (so any origin may ask: Beyond TV on LG and Samsung runs from a file), and a few asks a minute each.
+const HOUSE = /^(::ffff:)?(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.)|^(::1|fe80:|fc|fd)/i;
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+const asks = new Map();
+function tooMany(key, max) {
+	const now = Date.now();
+	const list = (asks.get(key) || []).filter((t) => t > now - 60000);
+	list.push(now);
+	asks.set(key, list);
+	if (asks.size > 500) for (const [k, v] of asks) if (v[v.length - 1] < now - 60000) asks.delete(k);
+	return list.length > max;
+}
+
+createServer(async (req, res) => {
+	const ip = req.socket.remoteAddress || '';
+	const tv = (code, body) => send(res, code, body, 'application/json', CORS);
+	if (!HOUSE.test(ip)) return tv(403, { error: 'Only inside the house' });
+	if (req.method === 'OPTIONS') return tv(204, '');
+	const path = new URL(req.url, 'http://x').pathname;
+	try {
+		await loaded;
+		// How a TV looking round the house knows it has found Beyond Home.
+		if (path === '/tv/hi' && req.method === 'GET') return tv(200, { beyond: 'home' });
+		if (path === '/tv/hello' && req.method === 'POST') {
+			if (tooMany('hello ' + ip, 6)) return tv(429, { error: 'Slow down a little' });
+			const body = JSON.parse((await readBody(req)) || '{}');
+			return tv(200, startPairing(state, body.name));
+		}
+		if (tooMany('tv ' + ip, 120)) return tv(429, { error: 'Slow down a little' });
+		const me = who(state, req.headers.authorization);
+		if (!me) return tv(401, { error: 'Pair this TV again' });
+		if (me.kind === 'waiting') return tv(202, { waiting: true, code: me.code });
+		if (path === '/tv/snapshot' && req.method === 'GET') return tv(200, tvSnapshot(await snapshot()));
+		if (path === '/tv/act' && req.method === 'POST') {
+			const out = tvCalls(await snapshot(), JSON.parse(await readBody(req)));
+			if (out.error) return tv(400, { error: out.error });
+			for (const c of out.calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
+			return tv(200, { ok: true });
+		}
+		if (path === '/tv/bye' && req.method === 'POST') {
+			if (remove(state, me.tv.id)) await save();
+			return tv(200, { ok: true });
+		}
+		return tv(404, { error: 'Not found' });
+	} catch (e) {
+		console.error('tv', path, e.message);
+		return tv(e instanceof SyntaxError ? 400 : 502, { error: e instanceof SyntaxError ? 'Bad ask' : 'Home Assistant didn’t answer. Try again in a moment.' });
+	}
+}).listen(TV_PORT, () => console.log('Beyond Home for TVs on ' + TV_PORT));

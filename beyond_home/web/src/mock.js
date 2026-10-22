@@ -66,3 +66,19 @@ export async function mockAct(calls) {
 		if (service === 'set_temperature') a.temperature = data.temperature;
 	}
 }
+
+// Paired TVs in the stand-in: any six letters pair a new one.
+let tvs = [{ id: 'a1', name: 'Lounge TV', added: Date.now() - 864e5 * 3 }];
+export async function mockTvs() {
+	return clone(tvs);
+}
+export async function mockPairTv(code) {
+	await new Promise((r) => setTimeout(r, 300));
+	if (String(code).replace(/[^a-z0-9]/gi, '').length !== 6) throw new Error('That code didn’t work. Check the TV and try again.');
+	tvs.push({ id: 'b' + tvs.length, name: 'Bedroom TV', added: Date.now() });
+	return clone(tvs);
+}
+export async function mockRemoveTv(id) {
+	tvs = tvs.filter((t) => t.id !== id);
+	return clone(tvs);
+}

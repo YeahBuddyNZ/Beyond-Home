@@ -1,5 +1,5 @@
 name: Beyond Home
-version: "0.1.0"
+version: "0.2.0"
 slug: beyond_home
 description: Your whole home in plain words. One remote for the TV, the sound, the lights and the heat pumps.
 url: https://github.com/YeahBuddyNZ/Beyond-Home
@@ -12,3 +12,8 @@ ingress_port: 8099
 panel_icon: mdi:home-heart
 panel_title: Beyond Home
 homeassistant_api: true
+# The door Beyond TV uses on the house network (paired once by a code; see server/tvs.mjs).
+ports:
+  8098/tcp: 8098
+ports_description:
+  8098/tcp: Beyond TV
