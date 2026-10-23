@@ -92,7 +92,7 @@ export function tvSnapshot(snap) {
 
 const DOES = ['moment', 'volume_up', 'volume_down', 'mute', 'power', 'toggle'];
 
-// A TV's ask ({ room, do, moment?, thing? }) into service calls, or { error }. Every call passes allow.mjs.
+// A TV's ask ({ room, do, moment?, thing?, beat? }) into service calls, or { error }. Every call passes allow.mjs.
 export function tvCalls(snap, ask) {
 	if (!ask || typeof ask !== 'object' || !DOES.includes(ask.do)) return { error: 'Not something a TV asks' };
 	const room = (snap.rooms || []).find((r) => r.id === ask.room);
@@ -100,7 +100,7 @@ export function tvCalls(snap, ask) {
 	let calls = [];
 	if (ask.do === 'moment') {
 		if (!MOMENTS.some((m) => m.id === ask.moment)) return { error: 'No such moment' };
-		calls = momentCalls(ask.moment, room);
+		calls = momentCalls(ask.moment, room, ask.beat);
 	} else if (ask.do === 'toggle') {
 		const t = (room.things || []).find((x) => x.entity_id === ask.thing);
 		if (!t || isAway(t) || kindOf(t) === 'other') return { error: 'That isn’t in this room' };

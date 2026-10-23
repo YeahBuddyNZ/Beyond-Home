@@ -10,7 +10,7 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 
 - **Rooms, not devices.** Every room in one short line: "TV on (Netflix), volume 32, 1 light on, heat pump 21°".
 - **One remote.** Volume goes wherever the sound is coming from: the receiver when it is on, otherwise the TV, otherwise a speaker. Power, mute and the input in the same place.
-- **Moments.** Movie night (TV and receiver on, sound to the TV, lights down), Morning, Bedtime and Everything off. A room only shows the moments that fit it.
+- **Moments.** Movie night (TV and receiver on, sound to the TV, lights down), Morning, Bedtime, Everything off and Party (lights bright and in colour; when Beyond TV runs a party, the colours change with its music and go back to warm white after). A room only shows the moments that fit it.
 - **Each thing in the room.** On and off, lights brighter and dimmer, heat pumps warmer and cooler by half a degree.
 - **Works inside the house.** Nothing goes through the internet, and every device still works with its own remote and app.
 - **The way back.** Home Assistant's own screens are under *Settings*, *Advanced*, for anything Beyond Home doesn't do yet.

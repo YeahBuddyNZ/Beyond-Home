@@ -51,7 +51,7 @@ test('the TV sees rooms in plain words and never the show or anything not on the
 	assert.deepEqual(out.rooms.map((r) => r.name), ['Lounge', 'Bedroom']);
 	const lounge = out.rooms[0];
 	assert.equal(lounge.line, 'TV on (Netflix), volume 32, 1 light on');
-	assert.deepEqual(lounge.moments.map((m) => m.id), ['movie', 'morning', 'bedtime', 'off']);
+	assert.deepEqual(lounge.moments.map((m) => m.id), ['movie', 'morning', 'bedtime', 'off', 'party']);
 	assert.equal(lounge.remote.kind, 'receiver');
 	assert.equal(lounge.remote.volume, 32);
 	const json = JSON.stringify(out);
@@ -61,6 +61,8 @@ test('the TV sees rooms in plain words and never the show or anything not on the
 test('a TV asks for named things and the box builds the calls, all through the allow list', () => {
 	assert.equal(tvCalls(snap, { room: 'lounge', do: 'volume_up' }).calls[0].data.entity_id, 'media_player.lounge_amp');
 	assert.ok(tvCalls(snap, { room: 'lounge', do: 'moment', moment: 'movie' }).calls.length >= 3);
+	assert.equal(tvCalls(snap, { room: 'lounge', do: 'moment', moment: 'party', beat: 3 }).calls[0].data.brightness_pct, 100);
+	assert.equal(tvCalls(snap, { room: 'lounge', do: 'moment', moment: 'party-over' }).calls[0].data.brightness_pct, 80);
 	assert.equal(tvCalls(snap, { room: 'bedroom', do: 'toggle', thing: 'light.bed' }).calls[0].service, 'turn_on');
 	assert.ok(tvCalls(snap, { room: 'bedroom', do: 'toggle', thing: 'light.lounge_lamp' }).error, 'only things in that room');
 	assert.ok(tvCalls(snap, { room: 'lounge', do: 'toggle', thing: 'lock.front' }).error);

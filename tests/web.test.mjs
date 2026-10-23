@@ -45,13 +45,42 @@ test('movie night turns the TV and sound on, sound to the TV, lights down', () =
 	assert.equal(calls[2].data.source, 'TV (ARC)');
 	assert.equal(calls[3].data.brightness_pct, 15);
 	assert.deepEqual(lib.momentCalls('movie', { things: [lamp] }), []);
-	assert.deepEqual(lib.momentsFor({ things: [lamp] }).map((m) => m.id), ['morning', 'bedtime', 'off']);
+	assert.deepEqual(lib.momentsFor({ things: [lamp] }).map((m) => m.id), ['morning', 'bedtime', 'off', 'party']);
 });
 
 test('bedtime leaves the heat pump alone, everything off does not', () => {
 	const ids = (id) => lib.momentCalls(id, lounge).map((c) => c.data.entity_id);
 	assert.ok(!ids('bedtime').includes(heat.entity_id));
 	assert.ok(ids('off').includes(heat.entity_id));
+});
+
+test('a party lights the room up in colour and moves the colours on each beat', () => {
+	const bulb = t('light.lounge_bulb', 'on', { supported_color_modes: ['xy', 'color_temp'] });
+	const hue = t('light.lounge_strip', 'on', { supported_color_modes: ['xy'], effect_list: ['candle', 'prism'] });
+	const room = { things: [lamp, bulb, hue, tv] };
+	const calls = lib.momentCalls('party', room, 0);
+	assert.deepEqual(calls.map((c) => c.data.entity_id), ['light.lounge_lamp', 'light.lounge_bulb', 'light.lounge_strip']);
+	assert.deepEqual(calls[0].data, { entity_id: 'light.lounge_lamp', brightness_pct: 100 }, 'a plain light just goes bright');
+	assert.deepEqual(calls[1].data.rgb_color, lib.PARTY_COLOURS[1]);
+	assert.equal(calls[2].data.effect, 'prism', 'a light with its own party effect uses it');
+	assert.deepEqual(lib.momentCalls('party', room, 1)[1].data.rgb_color, lib.PARTY_COLOURS[2]);
+	assert.deepEqual(lib.momentCalls('party', room, 'nonsense')[1].data.rgb_color, lib.PARTY_COLOURS[1]);
+	const over = lib.momentCalls('party-over', room);
+	assert.equal(over[1].data.color_temp_kelvin, 2700);
+	assert.ok(!('color_temp_kelvin' in over[0].data));
+	assert.ok(!lib.momentsFor(room).some((m) => m.id === 'party-over'), 'party over is never a button');
+	assert.ok(lib.momentsFor(room).some((m) => m.id === 'party'));
+	for (const c of [...calls, ...over]) assert.equal(refuse(c), null, JSON.stringify(c));
+});
+
+test('colours and effects only go to lights, and only sensible ones', () => {
+	const c = (data, domain = 'light') => ({ domain, service: 'turn_on', data: { entity_id: domain + '.x', ...data } });
+	assert.ok(refuse(c({ rgb_color: [256, 0, 0] })));
+	assert.ok(refuse(c({ rgb_color: [1, 2] })));
+	assert.ok(refuse(c({ effect: '' })));
+	assert.ok(refuse(c({ color_temp_kelvin: 9000 })));
+	assert.ok(refuse(c({ rgb_color: [1, 2, 3] }, 'switch')));
+	assert.equal(refuse(c({ rgb_color: [1, 2, 3], brightness_pct: 50 })), null);
 });
 
 test('heat pumps stay between 16 and 30, by half degrees', () => {
