@@ -131,10 +131,24 @@ export const MOMENTS = [
 	{ id: 'movie', name: 'Movie night', lead: 'TV and sound on, lights down' },
 	{ id: 'morning', name: 'Morning', lead: 'Lights up' },
 	{ id: 'bedtime', name: 'Bedtime', lead: 'Screens and lights off' },
-	{ id: 'off', name: 'Everything off', lead: 'The whole room off' }
+	{ id: 'off', name: 'Everything off', lead: 'The whole room off' },
+	{ id: 'party', name: 'Party', lead: 'Lights bright and colourful' },
+	// Back to ordinary light when a party on the TV ends. Never offered as a button.
+	{ id: 'party-over', name: 'Party over', lead: 'Lights back to warm white', hidden: true }
 ];
 
-export function momentCalls(id, room) {
+// Party colours, one per light, moved along one place each beat so the room changes with the music.
+export const PARTY_COLOURS = [[255, 0, 160], [0, 200, 255], [255, 190, 0], [120, 255, 0], [160, 60, 255], [255, 80, 40]];
+const PARTY_EFFECT = /colou?r ?loop|rainbow|party|disco|prism|cycle/i;
+const COLOUR_MODES = ['hs', 'xy', 'rgb', 'rgbw', 'rgbww'];
+export const canColour = (t) => ((t.attributes || {}).supported_color_modes || []).some((m) => COLOUR_MODES.includes(m));
+// A light's own party effect, when it has one (Hue's prism, a colour loop), so it keeps changing between beats.
+export function partyEffect(t) {
+	const list = (t.attributes || {}).effect_list;
+	return Array.isArray(list) ? list.find((e) => typeof e === 'string' && e.length <= 40 && PARTY_EFFECT.test(e)) || null : null;
+}
+
+export function momentCalls(id, room, beat) {
 	const things = (room.things || []).filter((t) => !isAway(t));
 	const of = (k) => things.filter((t) => kindOf(t) === k);
 	const out = [];
@@ -163,11 +177,26 @@ export function momentCalls(id, room) {
 		}
 		return out;
 	}
+	if (id === 'party') {
+		const step = Math.max(0, Math.floor(Number(beat) || 0)) % PARTY_COLOURS.length;
+		of('light').forEach((l, i) => {
+			const effect = partyEffect(l);
+			if (effect) out.push(call('light', 'turn_on', l.entity_id, { brightness_pct: 100, effect }));
+			else if (canColour(l)) out.push(call('light', 'turn_on', l.entity_id, { brightness_pct: 100, rgb_color: PARTY_COLOURS[(i + step) % PARTY_COLOURS.length].slice() }));
+			else out.push(dimCall(l, 100));
+		});
+		return out;
+	}
+	if (id === 'party-over') {
+		// Warm white undoes the colour and, on most lights, the effect too.
+		of('light').filter(isOn).forEach((l) => out.push(canColour(l) ? call('light', 'turn_on', l.entity_id, { brightness_pct: 80, color_temp_kelvin: 2700 }) : dimCall(l, 80)));
+		return out;
+	}
 	return [];
 }
 
 // The moments that do something in this room, so a room with no TV never shows Movie night.
-export const momentsFor = (room) => MOMENTS.filter((m) => momentCalls(m.id, room).length > 0 || (m.id === 'off' && (room.things || []).length > 0));
+export const momentsFor = (room) => MOMENTS.filter((m) => !m.hidden && (momentCalls(m.id, room).length > 0 || (m.id === 'off' && (room.things || []).length > 0)));
 
 // Rooms in the order a family thinks of them: the ones with a TV first, then by name.
 export function sortRooms(rooms) {

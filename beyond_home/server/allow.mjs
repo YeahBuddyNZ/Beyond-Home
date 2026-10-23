@@ -11,7 +11,7 @@ export const ALLOWED = {
 };
 
 const ID = /^[a-z_]+\.[a-z0-9_]+$/;
-const DATA = { entity_id: 1, source: 1, is_volume_muted: 1, brightness_pct: 1, temperature: 1 };
+const DATA = { entity_id: 1, source: 1, is_volume_muted: 1, brightness_pct: 1, temperature: 1, rgb_color: 1, effect: 1, color_temp_kelvin: 1 };
 
 // Returns null when the call is fine, or why it isn't.
 export function refuse(c) {
@@ -25,6 +25,10 @@ export function refuse(c) {
 	if ('brightness_pct' in data && !(data.brightness_pct >= 1 && data.brightness_pct <= 100)) return 'Brightness out of range';
 	if ('temperature' in data && !(data.temperature >= 16 && data.temperature <= 30)) return 'Temperature out of range';
 	if ('source' in data && (typeof data.source !== 'string' || data.source.length > 80)) return 'Bad input';
+	if ('rgb_color' in data && !(Array.isArray(data.rgb_color) && data.rgb_color.length === 3 && data.rgb_color.every((n) => Number.isInteger(n) && n >= 0 && n <= 255))) return 'Bad colour';
+	if ('effect' in data && (typeof data.effect !== 'string' || !data.effect || data.effect.length > 40)) return 'Bad effect';
+	if ('color_temp_kelvin' in data && !(Number.isInteger(data.color_temp_kelvin) && data.color_temp_kelvin >= 2000 && data.color_temp_kelvin <= 6500)) return 'Bad white';
+	if (('rgb_color' in data || 'effect' in data || 'color_temp_kelvin' in data) && domain !== 'light') return 'Only lights take a colour';
 	if ('is_volume_muted' in data && typeof data.is_volume_muted !== 'boolean') return 'Bad mute';
 	return null;
 }
