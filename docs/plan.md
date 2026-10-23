@@ -94,3 +94,13 @@ Beyond TV owns the screens; Beyond Home owns the data and the calls. The TV gets
 
 These slot into the stages above: more brands and the energy line come with stage 1 (the box and the app), the TV
 door and Home row are stage 2, control from away stays stage 3.
+
+## Setting it up (23/10/2026)
+
+- **Today:** home.gobeyond.nz (the website's `/home/add`) opens the box's own `/_my_redirect` page that adds this
+  repo as an app store, the same way Home Assistant's my.home-assistant.io links work. A web page on https can't see
+  into the house, so it tries `homeassistant.local:8123` and takes a typed address otherwise, kept in that browser
+  only. The repo must be public for the box to add it.
+- **Next:** finding the box from the Beyond Family app on the phone (local network discovery, `_home-assistant._tcp`
+  over mDNS), so nobody types an address. Needs the native apps' local network permission.
+- **Later:** a pre-set box that arrives with Beyond Home already in it.
