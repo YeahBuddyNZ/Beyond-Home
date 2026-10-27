@@ -17,7 +17,7 @@ export type Thing = {
 export type Room = { id: string; name: string; things: Thing[] }
 export type Snapshot = { rooms: Room[]; time: number }
 export type Call = { domain: string; service: string; data: Record<string, unknown> }
-export type PairedTv = { id: string; name: string; added: number }
+export type PairedTv = { id: string; name: string; kind: "tv" | "phone"; added: number }
 
 // The family's music, from the Beyond Music server through Beyond Home (server/music.mjs). Only what the tab uses.
 export type MusicTrack = { id: string; title: string; artist: string; album: string; albumId: string; track?: number; disc?: number; duration?: number }

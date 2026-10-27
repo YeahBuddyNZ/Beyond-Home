@@ -1,28 +1,42 @@
 // Talking to the box: only its own routes (beyond_home/server/main.mjs), which talk to Home Assistant for us.
-// Paths are relative, because Home Assistant serves the app under its own ingress address.
+// Paths are relative, because Home Assistant serves the app under its own ingress address. The phone app asks the
+// box's house door instead (src/phone.ts), with its own key.
 // ?preview swaps the box for the stand-in in mock.js, so the app can be looked at in a browser.
 
 import type { Call, MusicLibrary, MusicWhere, PairedTv, Snapshot, Station } from "@/lib/types"
+import { PHONE, forget, phoneAsk, phoneMedia } from "@/phone"
 
 // A build for the box (vite build --mode hub) leaves the stand-in out altogether.
-export const PREVIEW = import.meta.env.MODE !== "hub" && /[?&]preview/.test(location.search)
+export const PREVIEW = import.meta.env.MODE !== "hub" && import.meta.env.MODE !== "phone" && /[?&]preview/.test(location.search)
 
 async function answer(res: Response) {
+  if (PHONE && res.status === 401) {
+    // The box has let this phone go (taken off in Settings): back to pairing.
+    forget()
+    location.reload()
+  }
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error || "Beyond Home didn’t answer.")
   return body
 }
 
+// One of the app's own asks ("snapshot", "act", "music/..."): through ingress, or the house door on the phone.
+function ask(path: string, init: RequestInit = {}) {
+  if (!PHONE) return fetch("./api/" + path, init)
+  const p = phoneAsk(path)
+  return fetch(p.url, { ...init, headers: { ...(init.headers as Record<string, string>), ...p.headers } })
+}
+
 export const home = {
   async snapshot(): Promise<Snapshot> {
     if (PREVIEW) return (await import("./mock.js")).mockSnapshot()
-    return answer(await fetch("./api/snapshot", { cache: "no-store" }))
+    return answer(await ask("snapshot", { cache: "no-store" }))
   },
   async act(calls: Call | Call[]): Promise<void> {
     const list = ([] as Call[]).concat(calls)
     if (!list.length) return
     if (PREVIEW) return (await import("./mock.js")).mockAct(list)
-    await answer(await fetch("./api/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(list) }))
+    await answer(await ask("act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(list) }))
   },
   // Beyond TVs paired with the box (server/tvs.mjs): the TV shows a code, it is typed here.
   async tvs(): Promise<PairedTv[]> {
@@ -51,17 +65,17 @@ export const home = {
   },
   async music(): Promise<MusicLibrary> {
     if (PREVIEW) return (await import("./mock.js")).mockMusic()
-    return answer(await fetch("./api/music/library", { cache: "no-store" }))
+    return answer(await ask("music/library", { cache: "no-store" }))
   },
   async radio(): Promise<Station[]> {
     if (PREVIEW) return (await import("./mock.js")).mockRadio()
-    return (await answer(await fetch("./api/music/radio", { cache: "no-store" }))).stations
+    return (await answer(await ask("music/radio", { cache: "no-store" }))).stations
   },
   played(trackId: string) {
     if (PREVIEW) return
     const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: trackId }) }
-    fetch("./api/music/played", post).catch(() => {})
+    ask("music/played", post).catch(() => {})
   },
-  playUrl: (trackId: string) => (PREVIEW ? "" : "./api/music/play/" + trackId),
-  coverUrl: (albumId: string) => "./api/music/cover/" + albumId,
+  playUrl: (trackId: string) => (PREVIEW ? "" : PHONE ? phoneMedia("music/play/" + trackId) : "./api/music/play/" + trackId),
+  coverUrl: (albumId: string) => (PHONE ? phoneMedia("music/cover/" + albumId) : "./api/music/cover/" + albumId),
 }

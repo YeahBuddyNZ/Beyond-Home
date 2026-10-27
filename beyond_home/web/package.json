@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:hub": "tsc --noEmit && vite build --mode hub",
+    "build:phone": "tsc --noEmit && vite build --mode phone --outDir dist-phone",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

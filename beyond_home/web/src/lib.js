@@ -249,3 +249,36 @@ export function findAlbums(library, query) {
 		return words.every((w) => hay.includes(w));
 	});
 }
+
+// The phone app finding the box: the house door is port 8098 (server/tvs.mjs). A typed address is cleaned to
+// http://<host>:8098, house addresses only, or null when it can't be one. Empty stays empty.
+const HOUSE_HOST = /^(10\.\d+|192\.168|172\.(1[6-9]|2\d|3[01]))\.\d+\.\d+$/;
+export function boxAddress(text) {
+	let s = String(text || '').trim();
+	if (!s) return '';
+	if (!/^https?:\/\//i.test(s)) s = 'http://' + s;
+	let u;
+	try {
+		u = new URL(s);
+	} catch {
+		return null;
+	}
+	const h = u.hostname.toLowerCase();
+	if (!(HOUSE_HOST.test(h) || h.endsWith('.local') || h.endsWith('.lan') || h.endsWith('.home.arpa') || /^[a-z0-9-]+$/.test(h))) return null;
+	return `http://${h}:${u.port && u.port !== '8099' && u.port !== '8123' ? u.port : '8098'}`;
+}
+
+// Where the phone looks, best first: where it found the box last, then the names a Beyond Home box answers to.
+export function boxTries(last) {
+	const names = ['http://beyond-home.local:8098', 'http://homeassistant.local:8098', 'http://homeassistant:8098'];
+	return [last, ...names].filter((a, i, all) => a && all.indexOf(a) === i);
+}
+
+// A phone's name for the box's list, from what the browser says it is.
+export function phoneName(userAgent) {
+	const ua = String(userAgent || '');
+	if (/iPad/.test(ua)) return 'iPad';
+	if (/iPhone/.test(ua)) return 'iPhone';
+	if (/Android/.test(ua)) return 'Android phone';
+	return 'Phone';
+}

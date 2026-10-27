@@ -17,6 +17,8 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 - **Your home on the TV.** [Beyond™ TV](https://github.com/YeahBuddyNZ/Beyond.TV) gets a Home row: every room's line, its Moments and the one remote, from the sofa. The TV finds the box by itself and shows a code; type it in *Settings*, *TVs*. Taking a TV off there stops it straight away.
 - **Your music.** A *Music* tab plays the family's own albums and New Zealand radio, with a player bar that follows you round the app and the phone's lock screen buttons. The music lives on a Mac, a Raspberry Pi or this box, wherever [Beyond Music](https://github.com/YeahBuddyNZ/Beyond-Music) runs (it copies CDs too). On this box it's found by itself; for a Mac, type its address in *Settings*, *Music*. Beyond Home passes the asks along (`server/music.mjs`, its own short list of paths), so it works however Home Assistant is opened.
 
+- **On your phone.** The Beyond Home app for iPhone finds the box on your home Wi-Fi and shows a code; type it on the box under *Settings*, *TVs and phones*, once. Then the rooms, the remote and your music are in your pocket anywhere in the house. *Forget this box* under *Settings* lets it go, and the box can take a phone off too. (Coming to TestFlight; not yet tried on a real iPhone.)
+
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 
 ## Installing (Home Assistant)
@@ -40,11 +42,22 @@ npm run dev
 
 Then open `http://localhost:5173/?preview`: a made-up house (Lounge with a TV, Yamaha receiver and heat pump, a kitchen speaker, a kid's room, a bedroom with a blind).
 
+## The iPhone app
+
+`app/` is a [Capacitor](https://capacitorjs.com) shell around the phone build of the web app.
+
+```bash
+cd app && npm install && npm run sync   # builds beyond_home/web in phone mode and copies it in
+```
+
+Then open `app/ios/App/App.xcodeproj` in Xcode. Xcode Cloud does the same with `app/ios/App/ci_scripts/ci_post_clone.sh`.
+
 ## Checks
 
 ```bash
 sh tests/run.sh                                   # the decisions, the allow list and the server
 cd beyond_home/web && npm run build:hub           # typecheck and build
+cd beyond_home/web && npm run build:phone         # the phone app's build
 ```
 
 ## Licence

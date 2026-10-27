@@ -1,0 +1,16 @@
+{
+  "name": "beyond-home-app",
+  "private": true,
+  "description": "The Beyond Home phone app: a Capacitor shell around the phone build of ../beyond_home/web.",
+  "scripts": {
+    "web": "npm --prefix ../beyond_home/web run build:phone",
+    "sync": "npm run web && cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2"
+  }
+}

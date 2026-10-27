@@ -8,7 +8,7 @@ import { extname, join, normalize } from 'node:path';
 import { refuse } from './allow.mjs';
 import { ROOMS_TEMPLATE, buildSnapshot } from './snapshot.mjs';
 import { cleanAddress, createMusic, musicPath } from './music.mjs';
-import { approve, listTvs, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
+import { approve, listTvs, phonePath, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
 
 const PORT = Number(process.env.PORT || 8099);
 const WWW = process.env.WWW || '/app/www';
@@ -67,21 +67,37 @@ function readBody(req) {
 	});
 }
 
+// The app's own asks, the same from Home Assistant's ingress and from a paired phone on the house door: the rooms,
+// service calls (every one checked by allow.mjs), and the music passed through. `extra` carries the door's headers.
+// Answers true when it handled the ask.
+async function appAsk(req, res, path, search, extra = {}) {
+	if (path === '/api/snapshot' && req.method === 'GET') return (send(res, 200, await snapshot(), 'application/json', extra), true);
+	if (path === '/api/act' && req.method === 'POST') {
+		const calls = [].concat(JSON.parse(await readBody(req)));
+		if (!calls.length || calls.length > 40) return (send(res, 400, { error: 'Nothing to do' }, 'application/json', extra), true);
+		for (const c of calls) {
+			const why = refuse(c);
+			if (why) return (send(res, 400, { error: why }, 'application/json', extra), true);
+		}
+		for (const c of calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
+		return (send(res, 200, { ok: true }, 'application/json', extra), true);
+	}
+	if (path.startsWith('/api/music/') && path !== '/api/music/where') {
+		const target = musicPath(req.method, path, search);
+		if (!target) return (send(res, 404, { error: 'Not found' }, 'application/json', extra), true);
+		const out = await music.pass(req, res, target, req.method === 'POST' ? await readBody(req) : null, extra);
+		if (out.missing) send(res, 503, { error: 'Your music isn’t answering. Is the Mac or box it lives on switched on?' }, 'application/json', extra);
+		return true;
+	}
+	return false;
+}
+
 createServer(async (req, res) => {
 	if (!INGRESS.has(req.socket.remoteAddress)) return send(res, 403, { error: 'Open Beyond Home from Home Assistant.' });
-	const path = new URL(req.url, 'http://x').pathname;
+	const url = new URL(req.url, 'http://x');
+	const path = url.pathname;
 	try {
-		if (path === '/api/snapshot' && req.method === 'GET') return send(res, 200, await snapshot());
-		if (path === '/api/act' && req.method === 'POST') {
-			const calls = [].concat(JSON.parse(await readBody(req)));
-			if (!calls.length || calls.length > 40) return send(res, 400, { error: 'Nothing to do' });
-			for (const c of calls) {
-				const why = refuse(c);
-				if (why) return send(res, 400, { error: why });
-			}
-			for (const c of calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
-			return send(res, 200, { ok: true });
-		}
+		if (await appAsk(req, res, path, url.search)) return;
 		if (path === '/api/tvs' && req.method === 'GET') return (await loaded, send(res, 200, { tvs: listTvs(state) }));
 		if (path === '/api/tvs/pair' && req.method === 'POST') {
 			await loaded;
@@ -104,13 +120,6 @@ createServer(async (req, res) => {
 			music.forget();
 			return send(res, 200, { address, found: Boolean(await music.find(true)) });
 		}
-		if (path.startsWith('/api/music/')) {
-			const target = musicPath(req.method, path, new URL(req.url, 'http://x').search);
-			if (!target) return send(res, 404, { error: 'Not found' });
-			const out = await music.pass(req, res, target, req.method === 'POST' ? await readBody(req) : null);
-			if (out.missing) return send(res, 503, { error: 'Your music isn’t answering. Is the Mac or box it lives on switched on?' });
-			return;
-		}
 		if (req.method !== 'GET') return send(res, 405, { error: 'No' });
 		const file = normalize(join(WWW, path === '/' ? 'index.html' : path));
 		if (!file.startsWith(WWW + '/')) return send(res, 404, { error: 'Not found' });
@@ -123,8 +132,9 @@ createServer(async (req, res) => {
 	}
 }).listen(PORT, () => console.log('Beyond Home on ' + PORT));
 
-// The TVs' door, on the house network. Only private addresses (a port forwarded from the internet gets nothing),
-// no cookies (so any origin may ask: Beyond TV on LG and Samsung runs from a file), and a few asks a minute each.
+// The house door, for Beyond TV and the Beyond Home phone app. Only private addresses (a port forwarded from the
+// internet gets nothing), no cookies (so any origin may ask: Beyond TV on LG and Samsung runs from a file, the phone
+// app from its own), and a few asks a minute each.
 const HOUSE = /^(::ffff:)?(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.)|^(::1|fe80:|fc|fd)/i;
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
 const asks = new Map();
@@ -142,20 +152,31 @@ createServer(async (req, res) => {
 	const tv = (code, body) => send(res, code, body, 'application/json', CORS);
 	if (!HOUSE.test(ip)) return tv(403, { error: 'Only inside the house' });
 	if (req.method === 'OPTIONS') return tv(204, '');
-	const path = new URL(req.url, 'http://x').pathname;
+	const url = new URL(req.url, 'http://x');
+	const path = url.pathname;
 	try {
 		await loaded;
-		// How a TV looking round the house knows it has found Beyond Home.
+		// How a TV or phone looking round the house knows it has found Beyond Home.
 		if (path === '/tv/hi' && req.method === 'GET') return tv(200, { beyond: 'home' });
 		if (path === '/tv/hello' && req.method === 'POST') {
 			if (tooMany('hello ' + ip, 6)) return tv(429, { error: 'Slow down a little' });
 			const body = JSON.parse((await readBody(req)) || '{}');
-			return tv(200, startPairing(state, body.name));
+			return tv(200, startPairing(state, body.name, Date.now(), body.kind));
 		}
-		if (tooMany('tv ' + ip, 120)) return tv(429, { error: 'Slow down a little' });
-		const me = who(state, req.headers.authorization);
-		if (!me) return tv(401, { error: 'Pair this TV again' });
+		// A song plays in pieces and a phone scrolls past dozens of covers, so those don't count against the limit.
+		const media = /^\/phone\/music\/(play|cover)\//.test(path);
+		if (!media && tooMany('tv ' + ip, 240)) return tv(429, { error: 'Slow down a little' });
+		// An <audio> or <img> can't send a header, so a phone's songs and covers carry the key as ?k= instead.
+		const me = who(state, req.headers.authorization || (media && req.method === 'GET' ? url.searchParams.get('k') : ''));
+		if (!me) return tv(401, { error: 'Pair this again' });
 		if (me.kind === 'waiting') return tv(202, { waiting: true, code: me.code });
+		if (path.startsWith('/phone/')) {
+			const as = me.kind === 'phone' ? phonePath(req.method, path) : null;
+			if (!as) return tv(404, { error: 'Not found' });
+			url.searchParams.delete('k');
+			if (await appAsk(req, res, as, url.search, CORS)) return;
+			return tv(404, { error: 'Not found' });
+		}
 		if (path === '/tv/snapshot' && req.method === 'GET') return tv(200, tvSnapshot(await snapshot()));
 		if (path === '/tv/act' && req.method === 'POST') {
 			const out = tvCalls(await snapshot(), JSON.parse(await readBody(req)));

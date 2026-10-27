@@ -107,11 +107,11 @@ test('every call the screens can make is one the box lets through', () => {
 	for (const c of all) assert.equal(refuse(c), null, JSON.stringify(c));
 });
 
-test('only api.ts talks to the box', () => {
+test('only api.ts (and phone.ts, finding and pairing the box) talks to the box', () => {
 	const walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]));
 	const src = new URL('../beyond_home/web/src/', import.meta.url).pathname;
 	const callers = walk(src).filter((f) => /\.(t|j)sx?$/.test(f) && /\bfetch\(/.test(readFileSync(f, 'utf8')));
-	assert.deepEqual(callers.map((f) => f.slice(src.length)), ['api.ts']);
+	assert.deepEqual(callers.map((f) => f.slice(src.length)), ['api.ts', 'phone.ts']);
 });
 
 test('no em or en dashes in anything people read', () => {
@@ -119,4 +119,18 @@ test('no em or en dashes in anything people read', () => {
 	const src = new URL('../beyond_home/web/src/', import.meta.url).pathname;
 	for (const f of walk(src).filter((x) => /\.(t|j)sx?$/.test(x) && !x.includes('/components/ui/') && !x.includes('/components/reui/')))
 		assert.doesNotMatch(readFileSync(f, 'utf8'), /[—–]/, f);
+});
+
+test('the phone app finds the box on the house door, and only inside the house', () => {
+	assert.equal(lib.boxAddress('192.168.1.20'), 'http://192.168.1.20:8098');
+	assert.equal(lib.boxAddress('http://homeassistant.local:8123'), 'http://homeassistant.local:8098', 'the address Home Assistant shows still works');
+	assert.equal(lib.boxAddress('beyond-home.local'), 'http://beyond-home.local:8098');
+	assert.equal(lib.boxAddress(''), '');
+	assert.equal(lib.boxAddress('example.com'), null);
+	assert.equal(lib.boxAddress('8.8.8.8'), null);
+	assert.equal(lib.boxAddress('http://[not'), null);
+	assert.deepEqual(lib.boxTries('http://beyond-home.local:8098'), ['http://beyond-home.local:8098', 'http://homeassistant.local:8098', 'http://homeassistant:8098']);
+	assert.equal(lib.boxTries('http://10.0.0.5:8098')[0], 'http://10.0.0.5:8098');
+	assert.equal(lib.phoneName('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)'), 'iPhone');
+	assert.equal(lib.phoneName(''), 'Phone');
 });

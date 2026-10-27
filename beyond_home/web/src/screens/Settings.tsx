@@ -4,13 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TvsCard } from "@/components/tvs-card"
 import { MusicCard } from "@/components/music-card"
 import { PageTitle, Shell } from "./Shell"
+import { PhoneCard } from "@/components/phone-card"
+import { PHONE } from "@/phone"
 
 export function Settings() {
   return (
     <Shell tab="settings">
       <PageTitle title="Settings" />
-      <TvsCard />
-      <MusicCard />
+      {PHONE ? <PhoneCard /> : <TvsCard />}
+      {!PHONE && <MusicCard />}
       <Card>
         <CardHeader>
           <CardTitle>Rooms</CardTitle>
@@ -20,6 +22,7 @@ export function Settings() {
           </CardDescription>
         </CardHeader>
       </Card>
+      {!PHONE && (
       <Card>
         <CardHeader>
           <CardTitle>Advanced</CardTitle>
@@ -35,6 +38,7 @@ export function Settings() {
           </a>
         </CardContent>
       </Card>
+      )}
       <p className="text-xs text-muted-foreground">Beyond™ Home {__APP_VERSION__}. Free for homes, always.</p>
     </Shell>
   )
