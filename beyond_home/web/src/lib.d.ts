@@ -24,3 +24,8 @@ export const MOMENTS: Moment[]
 export function momentCalls(id: string, room: Room): Call[]
 export function momentsFor(room: Room): Moment[]
 export function sortRooms(rooms: Room[]): Room[]
+import type { MusicAlbum, MusicLibrary, MusicTrack } from "@/lib/types"
+export function albumTracks(library: MusicLibrary | null, album: MusicAlbum | null | undefined): MusicTrack[]
+export function albumsToShow(library: MusicLibrary | null): MusicAlbum[]
+export function clock(seconds: number | undefined): string
+export function findAlbums(library: MusicLibrary | null, query: string): MusicAlbum[]

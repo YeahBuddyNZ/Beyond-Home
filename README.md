@@ -15,6 +15,7 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 - **Works inside the house.** Nothing goes through the internet, and every device still works with its own remote and app.
 - **The way back.** Home Assistant's own screens are under *Settings*, *Advanced*, for anything Beyond Home doesn't do yet.
 - **Your home on the TV.** [Beyond™ TV](https://github.com/YeahBuddyNZ/Beyond.TV) gets a Home row: every room's line, its Moments and the one remote, from the sofa. The TV finds the box by itself and shows a code; type it in *Settings*, *TVs*. Taking a TV off there stops it straight away.
+- **Your music.** A *Music* tab plays the family's own albums and New Zealand radio, with a player bar that follows you round the app and the phone's lock screen buttons. The music lives on a Mac, a Raspberry Pi or this box, wherever [Beyond Music](https://github.com/YeahBuddyNZ/Beyond-Music) runs (it copies CDs too). On this box it's found by itself; for a Mac, type its address in *Settings*, *Music*. Beyond Home passes the asks along (`server/music.mjs`, its own short list of paths), so it works however Home Assistant is opened.
 
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 

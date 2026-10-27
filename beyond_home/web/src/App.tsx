@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
 import { Home } from "@/screens/Home"
+import { Music } from "@/screens/Music"
 import { Remote } from "@/screens/Remote"
 import { Room } from "@/screens/Room"
 import { Settings } from "@/screens/Settings"
 
-// Screens by address: #home, #room/<id>, #remote, #remote/<id>, #settings.
+// Screens by address: #home, #room/<id>, #remote, #remote/<id>, #music, #music/<view>, #settings.
 const read = () => {
   const [screen, id] = location.hash.slice(1).split("/")
   return { screen: screen || "home", id: id ? decodeURIComponent(id) : undefined }
@@ -23,6 +24,7 @@ export function App() {
 
   if (at.screen === "room" && at.id) return <Room key={at.id} id={at.id} />
   if (at.screen === "remote") return <Remote id={at.id} />
+  if (at.screen === "music") return <Music id={at.id} />
   if (at.screen === "settings") return <Settings />
   return <Home />
 }

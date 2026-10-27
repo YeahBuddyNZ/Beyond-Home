@@ -2,6 +2,7 @@ import { ExternalLinkIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TvsCard } from "@/components/tvs-card"
+import { MusicCard } from "@/components/music-card"
 import { PageTitle, Shell } from "./Shell"
 
 export function Settings() {
@@ -9,6 +10,7 @@ export function Settings() {
     <Shell tab="settings">
       <PageTitle title="Settings" />
       <TvsCard />
+      <MusicCard />
       <Card>
         <CardHeader>
           <CardTitle>Rooms</CardTitle>

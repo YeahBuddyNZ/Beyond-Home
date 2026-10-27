@@ -7,6 +7,7 @@ import { readFile, rename, writeFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { refuse } from './allow.mjs';
 import { ROOMS_TEMPLATE, buildSnapshot } from './snapshot.mjs';
+import { cleanAddress, createMusic, musicPath } from './music.mjs';
 import { approve, listTvs, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
 
 const PORT = Number(process.env.PORT || 8099);
@@ -40,6 +41,12 @@ async function save() {
 	await writeFile(STATE + '.new', JSON.stringify({ tvs: state.tvs }));
 	await rename(STATE + '.new', STATE);
 }
+
+// Where the family's music is (server/music.mjs): an address typed in Settings, else found by itself.
+const MUSIC = join(DATA, 'music.json');
+let musicAt = '';
+readFile(MUSIC, 'utf8').then((t) => (musicAt = JSON.parse(t).address || ''), () => {});
+const music = createMusic({ saved: () => musicAt });
 
 const send = (res, code, body, type = 'application/json', extra = {}) => {
 	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
@@ -87,6 +94,22 @@ createServer(async (req, res) => {
 			await loaded;
 			if (remove(state, JSON.parse(await readBody(req)).id)) await save();
 			return send(res, 200, { tvs: listTvs(state) });
+		}
+		if (path === '/api/music/where' && req.method === 'GET') return send(res, 200, { address: musicAt, found: Boolean(await music.find()) });
+		if (path === '/api/music/where' && req.method === 'POST') {
+			const address = cleanAddress(JSON.parse(await readBody(req)).address);
+			if (address === null) return send(res, 400, { error: 'That doesn’t look like an address in the house, like 192.168.1.20.' });
+			musicAt = address;
+			await writeFile(MUSIC, JSON.stringify({ address }));
+			music.forget();
+			return send(res, 200, { address, found: Boolean(await music.find(true)) });
+		}
+		if (path.startsWith('/api/music/')) {
+			const target = musicPath(req.method, path, new URL(req.url, 'http://x').search);
+			if (!target) return send(res, 404, { error: 'Not found' });
+			const out = await music.pass(req, res, target, req.method === 'POST' ? await readBody(req) : null);
+			if (out.missing) return send(res, 503, { error: 'Your music isn’t answering. Is the Mac or box it lives on switched on?' });
+			return;
 		}
 		if (req.method !== 'GET') return send(res, 405, { error: 'No' });
 		const file = normalize(join(WWW, path === '/' ? 'index.html' : path));
