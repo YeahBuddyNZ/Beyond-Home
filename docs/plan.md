@@ -104,3 +104,10 @@ door and Home row are stage 2, control from away stays stage 3.
 - **Next:** finding the box from the Beyond Family app on the phone (local network discovery, `_home-assistant._tcp`
   over mDNS), so nobody types an address. Needs the native apps' local network permission.
 - **Later:** a pre-set box that arrives with Beyond Home already in it.
+
+## One app: rooms, the TV remote and music (Kyle, 27/10/2026)
+
+Beyond Music folds into Beyond Home rather than being its own app: one Beyond Home app does your rooms, the TV
+remote and your music and videos, with Music as a tab. The box underneath stays the same, and Beyond TV stays its
+own thing on the telly. The music side is led from the Beyond media centre work and lands here as that tab, through
+the same `api.ts` and `allow.mjs` rules as everything else.
