@@ -1,8 +1,8 @@
-// Talking to the box: only its own two routes (beyond_home/server/main.mjs), which talk to Home Assistant for us.
+// Talking to the box: only its own routes (beyond_home/server/main.mjs), which talk to Home Assistant for us.
 // Paths are relative, because Home Assistant serves the app under its own ingress address.
 // ?preview swaps the box for the stand-in in mock.js, so the app can be looked at in a browser.
 
-import type { Call, PairedTv, Snapshot } from "@/lib/types"
+import type { Call, MusicLibrary, MusicWhere, PairedTv, Snapshot, Station } from "@/lib/types"
 
 // A build for the box (vite build --mode hub) leaves the stand-in out altogether.
 export const PREVIEW = import.meta.env.MODE !== "hub" && /[?&]preview/.test(location.search)
@@ -39,4 +39,29 @@ export const home = {
     const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }
     return (await answer(await fetch("./api/tvs/remove", post))).tvs
   },
+  // The family's music, through the box (server/music.mjs) so it works however Home Assistant is opened.
+  async musicWhere(): Promise<MusicWhere> {
+    if (PREVIEW) return (await import("./mock.js")).mockMusicWhere()
+    return answer(await fetch("./api/music/where", { cache: "no-store" }))
+  },
+  async setMusicWhere(address: string): Promise<MusicWhere> {
+    if (PREVIEW) return { address, found: true }
+    const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address }) }
+    return answer(await fetch("./api/music/where", post))
+  },
+  async music(): Promise<MusicLibrary> {
+    if (PREVIEW) return (await import("./mock.js")).mockMusic()
+    return answer(await fetch("./api/music/library", { cache: "no-store" }))
+  },
+  async radio(): Promise<Station[]> {
+    if (PREVIEW) return (await import("./mock.js")).mockRadio()
+    return (await answer(await fetch("./api/music/radio", { cache: "no-store" }))).stations
+  },
+  played(trackId: string) {
+    if (PREVIEW) return
+    const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: trackId }) }
+    fetch("./api/music/played", post).catch(() => {})
+  },
+  playUrl: (trackId: string) => (PREVIEW ? "" : "./api/music/play/" + trackId),
+  coverUrl: (albumId: string) => "./api/music/cover/" + albumId,
 }

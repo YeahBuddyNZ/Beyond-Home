@@ -82,3 +82,27 @@ export async function mockRemoveTv(id) {
 	tvs = tvs.filter((t) => t.id !== id);
 	return clone(tvs);
 }
+
+// A made-up music collection: NZ-sounding names, no real albums, no covers.
+const SONGS = [
+	['a0000000aa01', 'Tides', 'Moana and the Swell', 2018, ['Harbour', 'Reef', 'Shore', 'Low Water']],
+	['a0000000bb01', 'Kōwhai in Spring', 'Nikau', 2021, ['First Light', 'Kōwhai', 'Tūī Song']],
+	['a0000000cc01', 'Long Drive North', 'The Rimu Band', 2015, ['State Highway 1', 'Dargaville', 'Ninety Mile']],
+	['a0000000dd01', 'Rain on the Roof', 'Weka', 2023, ['Iron Roof', 'Puddles', 'Morning']],
+];
+const songId = (albumId, i) => albumId.slice(0, 10) + String(i).padStart(2, '0');
+export async function mockMusicWhere() {
+	return { address: '', found: true };
+}
+export async function mockMusic() {
+	const albums = SONGS.map(([id, title, artist, year, songs]) => ({ id, title, artist, year, hasCover: false, added: year, trackIds: songs.map((_, i) => songId(id, i)) }));
+	const tracks = SONGS.flatMap(([id, album, artist, , songs]) => songs.map((title, i) => ({ id: songId(id, i), title, artist, album, albumId: id, track: i + 1, duration: 180 + i * 17 })));
+	return { name: 'Our music', albums, tracks, recent: [{ id: songId('a0000000bb01', 0), at: Date.now() }] };
+}
+export async function mockRadio() {
+	return [
+		{ id: 'r1', name: 'RNZ National', url: '', logo: '', town: 'Wellington', rnz: true },
+		{ id: 'r2', name: 'RNZ Concert', url: '', logo: '', town: 'Wellington', rnz: true },
+		{ id: 'r3', name: 'The Harbour FM', url: '', logo: '', town: 'Tauranga', rnz: false },
+	];
+}

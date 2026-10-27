@@ -30,6 +30,10 @@ Tagline "Free your world". Plan: docs/plan.md.
   `api/tvs`, `api/tvs/pair`, `api/tvs/remove`), then `GET /tv/snapshot` and `POST /tv/act` with `Bearer <id>.<secret>`.
   A TV asks for named things (a moment, volume, mute, power, one thing on or off in that room); the box builds the
   calls with `web/src/lib.js` and `allow.mjs`, so the Dockerfile ships `lib.js` beside the server.
+- `server/music.mjs` is the Music tab's way to Beyond Music (YeahBuddyNZ/Beyond-Music, port 8097): `api/music/*` on the
+  ingress server, passed through only if `musicPath` names it (never via `allow.mjs`, which is Home Assistant calls
+  only), to an address typed in Settings (house addresses only, `cleanAddress`), else 172.30.32.1, 127.0.0.1 or
+  beyond-music.local. Songs stream with Range both ways. Kyle folded Beyond Music into Beyond Home on 27/10/2026.
 - `web/` is React 19, Vite and Tailwind v4 with ReUI (style `base-nova` on Base UI), copied from Beyond Gateway. Every
   visible part comes from `components/ui` or `components/reui` (installed output: compose, never edit).
 - Only `web/src/api.ts` talks to the box (a test checks). Pure decisions stay in `web/src/lib.js`, plain JavaScript so

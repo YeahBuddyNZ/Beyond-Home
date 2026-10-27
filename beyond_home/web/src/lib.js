@@ -203,3 +203,49 @@ export function sortRooms(rooms) {
 	const tv = (r) => ((r.things || []).some((t) => kindOf(t) === 'tv') ? 0 : 1);
 	return rooms.slice().sort((a, b) => tv(a) - tv(b) || a.name.localeCompare(b.name));
 }
+
+// ---------- music ----------
+
+// An album's songs in the order they're on the disc.
+export function albumTracks(library, album) {
+	const byId = new Map((library?.tracks || []).map((t) => [t.id, t]));
+	return (album?.trackIds || [])
+		.map((id) => byId.get(id))
+		.filter(Boolean)
+		.sort((a, b) => (a.disc || 1) - (b.disc || 1) || (a.track || 0) - (b.track || 0) || a.title.localeCompare(b.title));
+}
+
+// Albums the household played lately first, then the newest added: what the Music tab opens on.
+export function albumsToShow(library) {
+	const albums = library?.albums || [];
+	const byTrack = new Map((library?.tracks || []).map((t) => [t.id, t.albumId]));
+	const recent = [];
+	for (const r of library?.recent || []) {
+		const a = byTrack.get(r.id);
+		if (a && !recent.includes(a)) recent.push(a);
+	}
+	const rank = (a) => (recent.includes(a.id) ? recent.indexOf(a.id) : recent.length);
+	return albums.slice().sort((a, b) => rank(a) - rank(b) || b.added - a.added || a.title.localeCompare(b.title));
+}
+
+// 3:07, 1:02:15.
+export function clock(seconds) {
+	const s = Math.max(0, Math.floor(Number(seconds) || 0));
+	const h = Math.floor(s / 3600);
+	const m = Math.floor((s % 3600) / 60);
+	const ss = String(s % 60).padStart(2, '0');
+	return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
+// Every word in the search has to be somewhere in the album, the artist or a song.
+export function findAlbums(library, query) {
+	const key = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
+	const words = key(query).split(/\s+/).filter(Boolean);
+	if (!words.length) return albumsToShow(library);
+	const songs = new Map();
+	for (const t of library?.tracks || []) songs.set(t.albumId, (songs.get(t.albumId) || '') + ' ' + t.title);
+	return albumsToShow(library).filter((a) => {
+		const hay = key(`${a.title} ${a.artist} ${songs.get(a.id) || ''}`);
+		return words.every((w) => hay.includes(w));
+	});
+}
