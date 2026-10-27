@@ -29,3 +29,6 @@ export function albumTracks(library: MusicLibrary | null, album: MusicAlbum | nu
 export function albumsToShow(library: MusicLibrary | null): MusicAlbum[]
 export function clock(seconds: number | undefined): string
 export function findAlbums(library: MusicLibrary | null, query: string): MusicAlbum[]
+export function boxAddress(text: string): string | null
+export function boxTries(last?: string | null): string[]
+export function phoneName(userAgent: string): string

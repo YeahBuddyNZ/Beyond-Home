@@ -1,6 +1,7 @@
-// The TVs' door: Beyond TV pairs with the box once by a code, then sees the rooms and asks for named things
-// (a moment, the volume, one thing on or off). The TV never sends a service call of its own: the box builds every
-// call from the room as it is now and checks it with allow.mjs, like the app's. Pure, so tests/tv.test.mjs runs it.
+// The house door: Beyond TV and the Beyond Home phone app pair with the box once by a code, typed in the app.
+// A TV sees the rooms and asks for named things (a moment, the volume, one thing on or off): it never sends a service
+// call of its own, the box builds every call and checks it with allow.mjs. A phone gets the app's own asks (the
+// rooms, service calls checked by allow.mjs, the music), never the settings. Pure, so tests/tv.test.mjs runs it.
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { refuse } from './allow.mjs';
@@ -10,6 +11,7 @@ import { MOMENTS, isAway, isOn, kindOf, momentCalls, momentsFor, muteCall, remot
 const LETTERS = 'ABCDEFGHJKMNPQRTUVWXYZ234678';
 export const CODE_MINUTES = 10;
 export const MAX_TVS = 12;
+export const MAX_PHONES = 12;
 const MAX_WAITING = 20;
 
 export const hash = (s) => createHash('sha256').update(String(s)).digest('hex');
@@ -23,17 +25,19 @@ export function newCode(bytes = randomBytes(6)) {
 // Typed codes forgive spaces, dashes and lower case.
 export const cleanCode = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-const safeName = (s) => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40) || 'TV';
+const safeName = (s, kind) => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40) || (kind === 'phone' ? 'Phone' : 'TV');
+export const kindOfDevice = (k) => (k === 'phone' ? 'phone' : 'tv');
 
-// A TV asking to pair: it keeps the secret, the box keeps its hash and shows nothing but the code.
-export function startPairing(state, name, now = Date.now()) {
+// A TV or phone asking to pair: it keeps the secret, the box keeps its hash and shows nothing but the code.
+export function startPairing(state, name, now = Date.now(), kind = 'tv') {
+	kind = kindOfDevice(kind);
 	state.waiting = (state.waiting || []).filter((w) => w.expires > now).slice(-(MAX_WAITING - 1));
 	const id = randomBytes(9).toString('base64url');
 	const secret = randomBytes(32).toString('base64url');
 	let code;
 	do code = newCode();
 	while (state.waiting.some((w) => w.code === code));
-	state.waiting.push({ id, hash: hash(secret), code, name: safeName(name), expires: now + CODE_MINUTES * 60000 });
+	state.waiting.push({ id, hash: hash(secret), code, name: safeName(name, kind), kind, expires: now + CODE_MINUTES * 60000 });
 	return { id, secret, code, minutes: CODE_MINUTES };
 }
 
@@ -41,10 +45,13 @@ export function startPairing(state, name, now = Date.now()) {
 export function approve(state, code, now = Date.now()) {
 	const c = cleanCode(code);
 	const i = (state.waiting || []).findIndex((w) => w.code === c && w.expires > now);
-	if (i < 0) return 'That code didn’t work. Check the TV and try again.';
-	if ((state.tvs || []).length >= MAX_TVS) return 'That’s as many TVs as one home can have. Remove one first.';
+	if (i < 0) return 'That code didn’t work. Check the screen it’s on and try again.';
+	const kind = kindOfDevice(state.waiting[i].kind);
+	const same = (state.tvs || []).filter((t) => kindOfDevice(t.kind) === kind).length;
+	if (kind === 'tv' && same >= MAX_TVS) return 'That’s as many TVs as one home can have. Remove one first.';
+	if (kind === 'phone' && same >= MAX_PHONES) return 'That’s as many phones as one home can have. Remove one first.';
 	const [w] = state.waiting.splice(i, 1);
-	state.tvs = (state.tvs || []).concat({ id: w.id, hash: w.hash, name: w.name, added: now });
+	state.tvs = (state.tvs || []).concat({ id: w.id, hash: w.hash, name: w.name, kind, added: now });
 	return null;
 }
 
@@ -55,20 +62,33 @@ export function remove(state, id) {
 	return state.tvs.length !== before;
 }
 
-// "Bearer <id>.<secret>": 'tv' when paired, 'waiting' while its code is still on screen, null otherwise.
+// "Bearer <id>.<secret>" (or the same "<id>.<secret>" alone, for a song or a cover a phone's player asks for):
+// 'tv' or 'phone' when paired, 'waiting' while its code is still on screen, null otherwise.
 export function who(state, header, now = Date.now()) {
-	const m = /^Bearer ([A-Za-z0-9_-]{6,40})\.([A-Za-z0-9_-]{20,80})$/.exec(String(header || ''));
+	const m = /^(?:Bearer )?([A-Za-z0-9_-]{6,40})\.([A-Za-z0-9_-]{20,80})$/.exec(String(header || ''));
 	if (!m) return null;
 	const want = Buffer.from(hash(m[2]));
 	const same = (h) => h && h.length === want.length && timingSafeEqual(Buffer.from(h), want);
 	const tv = (state.tvs || []).find((t) => t.id === m[1]);
-	if (tv) return same(tv.hash) ? { kind: 'tv', tv } : null;
+	if (tv) return same(tv.hash) ? { kind: kindOfDevice(tv.kind), tv } : null;
 	const w = (state.waiting || []).find((x) => x.id === m[1] && x.expires > now);
 	return w && same(w.hash) ? { kind: 'waiting', code: w.code } : null;
 }
 
-// What a paired TV lists in the app: names and when, never the hash.
-export const listTvs = (state) => (state.tvs || []).map((t) => ({ id: t.id, name: t.name, added: t.added }));
+// What the app lists: names, TV or phone, and when, never the hash.
+export const listTvs = (state) => (state.tvs || []).map((t) => ({ id: t.id, name: t.name, kind: kindOfDevice(t.kind), added: t.added }));
+
+// What a phone may ask on the house door, as the ingress path it stands for: the app's own asks, never its settings
+// (pairing, the music's address), which stay behind Home Assistant's sign-in.
+export function phonePath(method, path) {
+	const p = String(path || '');
+	if (!p.startsWith('/phone/')) return null;
+	const rest = p.slice('/phone'.length);
+	if (method === 'GET' && rest === '/snapshot') return '/api/snapshot';
+	if (method === 'POST' && rest === '/act') return '/api/act';
+	if (rest.startsWith('/music/') && rest !== '/music/where') return '/api' + rest;
+	return null;
+}
 
 const thingOut = (t, room) => ({ id: t.entity_id, name: thingName(t, room.name), kind: kindOf(t), on: isOn(t), away: isAway(t) });
 

@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { approve, cleanCode, hash, newCode, remove, startPairing, tvCalls, tvSnapshot, who } from '../beyond_home/server/tvs.mjs';
+import { MAX_PHONES, MAX_TVS, approve, cleanCode, hash, listTvs, newCode, phonePath, remove, startPairing, tvCalls, tvSnapshot, who } from '../beyond_home/server/tvs.mjs';
 import { buildSnapshot } from '../beyond_home/server/snapshot.mjs';
 
 const t = (entity_id, state, attributes = {}) => ({ entity_id, state, attributes });
@@ -132,6 +132,53 @@ test('the TV door pairs, shows rooms, acts, and the app can take a TV away', asy
 	assert.equal((await fetch(door + '/api/snapshot')).status, 401);
 	assert.equal((await fetch(door + '/api/tvs/pair', { method: 'POST', headers: auth, body: '{}' })).status, 404);
 
+	// A TV never gets the phone's asks.
+	assert.equal((await fetch(door + '/phone/snapshot', { headers: auth })).status, 404);
+
+	// A phone pairs the same way, then gets the app's own asks on the house door.
+	const ph = await (await fetch(door + '/tv/hello', { method: 'POST', body: JSON.stringify({ name: 'Kitchen iPhone', kind: 'phone' }) })).json();
+	const key = ph.id + '.' + ph.secret;
+	const phone = { Authorization: 'Bearer ' + key };
+	assert.equal((await fetch(door + '/phone/snapshot', { headers: phone })).status, 202);
+	const both = await (await fetch(app + '/api/tvs/pair', { method: 'POST', body: JSON.stringify({ code: ph.code }) })).json();
+	assert.deepEqual(both.tvs.map((x) => x.kind), ['tv', 'phone']);
+	const full = await fetch(door + '/phone/snapshot', { headers: phone });
+	assert.equal(full.status, 200);
+	assert.equal(full.headers.get('access-control-allow-origin'), '*');
+	assert.ok((await full.json()).rooms.some((r) => r.things.some((x) => x.entity_id === 'light.lounge_lamp')));
+	const off = { domain: 'light', service: 'turn_off', data: { entity_id: 'light.lounge_lamp' } };
+	assert.equal((await fetch(door + '/phone/act', { method: 'POST', headers: phone, body: JSON.stringify([off]) })).status, 200);
+	assert.ok(seen.some((s) => s.path === '/api/services/light/turn_off'));
+	const unlock = { domain: 'lock', service: 'unlock', data: { entity_id: 'lock.front' } };
+	assert.equal((await fetch(door + '/phone/act', { method: 'POST', headers: phone, body: JSON.stringify([unlock]) })).status, 400);
+	// Never the settings, and the key in ?k= only opens songs and covers.
+	assert.equal((await fetch(door + '/phone/tvs/pair', { method: 'POST', headers: phone, body: '{}' })).status, 404);
+	assert.equal((await fetch(door + '/phone/music/where', { headers: phone })).status, 404);
+	assert.equal((await fetch(door + '/phone/snapshot?k=' + key)).status, 401);
+	assert.notEqual((await fetch(door + '/phone/music/cover/0123456789ab?k=' + key)).status, 401);
+
 	await fetch(app + '/api/tvs/remove', { method: 'POST', body: JSON.stringify({ id: p.id }) });
 	assert.equal((await fetch(door + '/tv/snapshot', { headers: auth })).status, 401);
+	await fetch(app + '/api/tvs/remove', { method: 'POST', body: JSON.stringify({ id: ph.id }) });
+	assert.equal((await fetch(door + '/phone/snapshot', { headers: phone })).status, 401);
+});
+
+test('phones pair like TVs, are counted apart, and only ask what the app asks', () => {
+	const state = {};
+	const a = startPairing(state, '', 0, 'phone');
+	assert.equal(approve(state, a.code, 1), null);
+	assert.deepEqual(listTvs(state).map((x) => [x.name, x.kind]), [['Phone', 'phone']]);
+	assert.equal(who(state, 'Bearer ' + a.id + '.' + a.secret, 2).kind, 'phone');
+	assert.equal(startPairing(state, 'x', 0, 'radio') && state.waiting.at(-1).kind, 'tv');
+	for (let i = 0; i < MAX_TVS; i++) approve(state, startPairing(state, 'TV ' + i, 0).code, 1);
+	assert.match(approve(state, startPairing(state, 'one more', 0).code, 1), /many TVs/);
+	assert.equal(approve(state, startPairing(state, 'phone two', 0, 'phone').code, 1), null, 'a full set of TVs leaves room for phones');
+	for (let i = 2; i < MAX_PHONES; i++) approve(state, startPairing(state, 'P' + i, 0, 'phone').code, 1);
+	assert.match(approve(state, startPairing(state, 'P', 0, 'phone').code, 1), /many phones/);
+	assert.equal(phonePath('GET', '/phone/snapshot'), '/api/snapshot');
+	assert.equal(phonePath('POST', '/phone/act'), '/api/act');
+	assert.equal(phonePath('GET', '/phone/music/play/0123456789ab'), '/api/music/play/0123456789ab');
+	assert.equal(phonePath('GET', '/phone/music/where'), null);
+	assert.equal(phonePath('POST', '/phone/tvs/pair'), null);
+	assert.equal(phonePath('GET', '/api/snapshot'), null);
 });

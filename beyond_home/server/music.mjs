@@ -72,7 +72,7 @@ export function createMusic({ saved = () => '', fetcher = fetch } = {}) {
 		find,
 		forget: () => (found = null),
 		// Passes one ask through, streaming the answer back (songs come in pieces, so Range goes both ways).
-		async pass(req, res, target, body) {
+		async pass(req, res, target, body, extra = {}) {
 			const base = await find();
 			if (!base) return { missing: true };
 			const headers = {};
@@ -83,7 +83,7 @@ export function createMusic({ saved = () => '', fetcher = fetch } = {}) {
 				found = null;
 				return { missing: true };
 			}
-			const out = { 'Cache-Control': target.startsWith('/api/cover/') ? 'private, max-age=86400' : 'no-store', 'X-Content-Type-Options': 'nosniff' };
+			const out = { ...extra, 'Cache-Control': target.startsWith('/api/cover/') ? 'private, max-age=86400' : 'no-store', 'X-Content-Type-Options': 'nosniff' };
 			for (const k of ['content-type', 'content-length', 'content-range', 'accept-ranges']) {
 				const v = answer.headers.get(k);
 				if (v) out[k] = v;

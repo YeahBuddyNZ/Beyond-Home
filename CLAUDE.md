@@ -6,7 +6,7 @@ Tagline "Free your world". Plan: docs/plan.md. Decisions: docs/adr/ (a decision 
 happens in somebody's house gets one in the same change; never rewrite an accepted one).
 
 **Becoming our own build of Home Assistant** (ADR 0001, 27/10/2026): four Apache 2.0 forks under YeahBuddyNZ
-(`beyond-home-os`, `-supervisor`, `-frontend`, `-core`), our changes as a short patch stack on each monthly release.
+(`operating-system`, `supervisor`, `frontend`, `core`: they kept Home Assistant's repo names), our changes as a short patch stack on each monthly release.
 Never the Home Assistant name or logo on anything a family sees. Until the first image ships, the add-on below is how
 it runs.
 
@@ -42,9 +42,16 @@ it runs.
   beyond-music.local. Songs stream with Range both ways. Kyle folded Beyond Music into Beyond Home on 27/10/2026.
 - `web/` is React 19, Vite and Tailwind v4 with ReUI (style `base-nova` on Base UI), copied from Beyond Gateway. Every
   visible part comes from `components/ui` or `components/reui` (installed output: compose, never edit).
-- Only `web/src/api.ts` talks to the box (a test checks). Pure decisions stay in `web/src/lib.js`, plain JavaScript so
+- Only `web/src/api.ts` talks to the box, plus `web/src/phone.ts` finding and pairing it (a test checks). Pure decisions stay in `web/src/lib.js`, plain JavaScript so
   `node --test` runs it: what a thing is, a room's line, where the remote's volume goes, the moments. Every call it can
   build must pass `allow.mjs` (a test checks). `?preview` runs against `web/src/mock.js` (made-up names only, never
   real family names); `npm run build:hub` leaves it out.
-- Checks: `sh tests/run.sh`; `cd beyond_home/web && npm run build:hub`. CI also builds the Docker image.
+- **The phone app** (`app/`, bundle `nz.gobeyond.home`, team Z2W739FC4J): a Capacitor 8 shell around
+  `npm run build:phone` (`vite --mode phone`, out to `dist-phone/`), bundled inside the app because the box is on the
+  house network, not the internet. `web/src/phone.ts` finds the box (`/tv/hi` at `beyond-home.local`,
+  `homeassistant.local`, `homeassistant`, or a typed address) and pairs by a code typed on the box under Settings, TVs
+  and phones, like a TV (`kind: 'phone'`). A paired phone asks `/phone/snapshot`, `/phone/act` and `/phone/music/*` on
+  the house door (`phonePath` in `tvs.mjs`, then the same `appAsk` the ingress uses); songs and covers carry the key as
+  `?k=`. Xcode Cloud runs `app/ios/App/ci_scripts/ci_post_clone.sh`. Never `?preview` in a phone build.
+- Checks: `sh tests/run.sh`; `cd beyond_home/web && npm run build:hub && npm run build:phone`. CI also builds the Docker image.
 - Not yet run on a real Home Assistant box: say so when reporting.

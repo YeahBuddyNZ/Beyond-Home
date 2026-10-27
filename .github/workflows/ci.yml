@@ -19,7 +19,7 @@ jobs:
         run: sh tests/run.sh
       - name: App typechecks and builds
         working-directory: beyond_home/web
-        run: npm ci --no-audit --no-fund && npm run build:hub
+        run: npm ci --no-audit --no-fund && npm run build:hub && npm run build:phone
 
   app:
     needs: test

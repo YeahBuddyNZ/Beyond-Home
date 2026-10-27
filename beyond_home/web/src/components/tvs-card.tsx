@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { TvIcon, XIcon } from "lucide-react"
+import { SmartphoneIcon, TvIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -9,7 +9,7 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, 
 import { home } from "@/api"
 import type { PairedTv } from "@/lib/types"
 
-// Beyond TV on the TVs in the house: the TV shows a code on its Home row, somebody types it here.
+// Beyond TV on the TVs in the house, and the Beyond Home phone app: each shows a code, somebody types it here.
 export function TvsCard() {
   const [tvs, setTvs] = useState<PairedTv[] | null>(null)
   const [code, setCode] = useState("")
@@ -24,7 +24,7 @@ export function TvsCard() {
     try {
       setTvs(await home.pairTv(code))
       setCode("")
-      toast.success("Paired. The TV shows your rooms in a few seconds.")
+      toast.success("Paired. Your rooms show there in a few seconds.")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "That didn’t work. Try again.")
     }
@@ -42,10 +42,10 @@ export function TvsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>TVs</CardTitle>
+        <CardTitle>TVs and phones</CardTitle>
         <CardDescription>
-          Beyond TV shows your rooms, Moments and the one remote right on the TV. On the TV, open Beyond TV and go to
-          Home: it shows a code. Type it here.
+          Beyond TV shows your rooms, Moments and the one remote right on the TV, and the Beyond Home phone app does the
+          same on a phone. Open Beyond TV and go to Home, or open the phone app at home: each shows a code. Type it here.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -54,7 +54,7 @@ export function TvsCard() {
             {tvs.map((tv) => (
               <Item key={tv.id} variant="outline" size="sm">
                 <ItemMedia variant="icon">
-                  <TvIcon />
+                  {tv.kind === "phone" ? <SmartphoneIcon /> : <TvIcon />}
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{tv.name}</ItemTitle>
@@ -77,7 +77,7 @@ export function TvsCard() {
           }}
         >
           <Field>
-            <FieldLabel htmlFor="tv-code">Code on the TV</FieldLabel>
+            <FieldLabel htmlFor="tv-code">Code on the TV or phone</FieldLabel>
             <Input
               id="tv-code"
               value={code}
@@ -88,10 +88,10 @@ export function TvsCard() {
               className="font-mono uppercase tracking-widest"
               onChange={(e) => setCode(e.target.value)}
             />
-            <FieldDescription>The code works for ten minutes. Taking a TV off here stops it straight away.</FieldDescription>
+            <FieldDescription>The code works for ten minutes. Taking one off here stops it straight away.</FieldDescription>
           </Field>
           <Button type="submit" className="self-start" disabled={busy || !code.trim()}>
-            Pair the TV
+            Pair
           </Button>
         </form>
       </CardContent>
