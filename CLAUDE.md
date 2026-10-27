@@ -2,7 +2,13 @@
 
 Beyond's home hub: Home Assistant underneath, the Beyond app on top. Part of the Beyond tools with Beyond TV
 (YeahBuddyNZ/Beyond.TV), Beyond Gateway (YeahBuddyNZ/Beyond-Gateway) and Beyond Family (YeahBuddyNZ/Beyond-Family).
-Tagline "Free your world". Plan: docs/plan.md.
+Tagline "Free your world". Plan: docs/plan.md. Decisions: docs/adr/ (a decision that changes what
+happens in somebody's house gets one in the same change; never rewrite an accepted one).
+
+**Becoming our own build of Home Assistant** (ADR 0001, 27/10/2026): four Apache 2.0 forks under YeahBuddyNZ
+(`beyond-home-os`, `-supervisor`, `-frontend`, `-core`), our changes as a short patch stack on each monthly release.
+Never the Home Assistant name or logo on anything a family sees. Until the first image ships, the add-on below is how
+it runs.
 
 ## Ours
 
