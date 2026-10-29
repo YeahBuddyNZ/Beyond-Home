@@ -52,6 +52,7 @@ it runs.
   `homeassistant.local`, `homeassistant`, or a typed address) and pairs by a code typed on the box under Settings, TVs
   and phones, like a TV (`kind: 'phone'`). A paired phone asks `/phone/snapshot`, `/phone/act` and `/phone/music/*` on
   the house door (`phonePath` in `tvs.mjs`, then the same `appAsk` the ingress uses); songs and covers carry the key as
-  `?k=`. Xcode Cloud runs `app/ios/App/ci_scripts/ci_post_clone.sh`. Never `?preview` in a phone build.
+  `?k=`. Albums kept on the phone (ADR 0002) live in IndexedDB through `web/src/offline.ts`, only in the phone build;
+  away from home the Music tab is those albums, and one the box no longer has goes from the phone (`keptGone`). Xcode Cloud runs `app/ios/App/ci_scripts/ci_post_clone.sh`. Never `?preview` in a phone build.
 - Checks: `sh tests/run.sh`; `cd beyond_home/web && npm run build:hub && npm run build:phone`. CI also builds the Docker image.
 - Not yet run on a real Home Assistant box: say so when reporting.

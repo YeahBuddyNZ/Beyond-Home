@@ -76,6 +76,18 @@ export const home = {
     const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: trackId }) }
     ask("music/played", post).catch(() => {})
   },
+  // A whole song or cover as a file, to keep on the phone (src/offline.ts).
+  async songFile(trackId: string): Promise<Blob> {
+    if (PREVIEW) return new Blob([new Uint8Array(400_000)], { type: "audio/mpeg" })
+    const res = await fetch(home.playUrl(trackId))
+    if (!res.ok) throw new Error("That song didn’t come across. Try again at home.")
+    return res.blob()
+  },
+  async coverFile(albumId: string): Promise<Blob | null> {
+    if (PREVIEW) return null
+    const res = await fetch(home.coverUrl(albumId)).catch(() => null)
+    return res?.ok ? res.blob() : null
+  },
   playUrl: (trackId: string) => (PREVIEW ? "" : PHONE ? phoneMedia("music/play/" + trackId) : "./api/music/play/" + trackId),
   coverUrl: (albumId: string) => (PHONE ? phoneMedia("music/cover/" + albumId) : "./api/music/cover/" + albumId),
 }

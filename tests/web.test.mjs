@@ -134,3 +134,27 @@ test('the phone app finds the box on the house door, and only inside the house',
 	assert.equal(lib.phoneName('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)'), 'iPhone');
 	assert.equal(lib.phoneName(''), 'Phone');
 });
+
+test('albums kept on the phone go when the box lets them go, never on an empty library', () => {
+	const library = { albums: [{ id: 'a1' }, { id: 'a2' }], tracks: [] };
+	assert.deepEqual(lib.keptGone(['a1', 'a3'], library), ['a3']);
+	assert.deepEqual(lib.keptGone(['a1', 'a3'], { albums: [], tracks: [] }), []);
+	assert.deepEqual(lib.keptGone(['a1'], null), []);
+});
+
+test('away from home the Music tab is the kept albums', () => {
+	const album = { id: 'a1', title: 'Made Up', artist: 'Nobody Real', hasCover: true, trackIds: ['t1', 't2'], added: 1 };
+	const tracks = [{ id: 't2', title: 'Two', artist: 'Nobody Real', album: 'Made Up', albumId: 'a1', track: 2 }, { id: 't1', title: 'One', artist: 'Nobody Real', album: 'Made Up', albumId: 'a1', track: 1 }];
+	const l = lib.keptLibrary([{ album, tracks }]);
+	assert.equal(l.name, 'On this phone');
+	assert.deepEqual(lib.albumTracks(l, album).map((t) => t.id), ['t1', 't2']);
+	assert.deepEqual(lib.findAlbums(l, 'two').map((a) => a.id), ['a1']);
+});
+
+test('sizes in plain words', () => {
+	assert.equal(lib.sizeWords(0), '1 KB');
+	assert.equal(lib.sizeWords(850_000), '850 KB');
+	assert.equal(lib.sizeWords(34_400_000), '34 MB');
+	assert.equal(lib.sizeWords(1_200_000_000), '1.2 GB');
+	assert.equal(lib.sizeWords(2_000_000_000), '2 GB');
+});

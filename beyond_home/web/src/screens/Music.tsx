@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react"
-import { ArrowLeftIcon, MusicIcon, PlayIcon, RadioIcon, SearchIcon, SettingsIcon, ShuffleIcon } from "lucide-react"
+import { ArrowLeftIcon, CheckCircle2Icon, DownloadIcon, MusicIcon, PlayIcon, RadioIcon, SearchIcon, SettingsIcon, ShuffleIcon } from "lucide-react"
 import * as lib from "@/lib.js"
 import { home } from "@/api"
 import { player, usePlayer } from "@/hooks/use-player"
+import { KEEPS, keepAlbum, keptCover, keptIds, keptSong, letGo, loadKept, useKept } from "@/offline"
+import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert"
+import { Badge } from "@/components/reui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -22,16 +26,19 @@ const song = (t: MusicTrack, album?: MusicAlbum): Playable => ({
   key: t.id,
   title: t.title,
   by: t.artist,
-  src: home.playUrl(t.id),
-  cover: album?.hasCover ? home.coverUrl(album.id) : undefined,
+  src: keptSong(t.id) ?? home.playUrl(t.id),
+  cover: album ? coverOf(album) : undefined,
   trackId: t.id,
 })
+
+// A kept album's cover comes from the phone, so it shows away from home too.
+const coverOf = (album: MusicAlbum) => keptCover(album.id) ?? (album.hasCover ? home.coverUrl(album.id) : undefined)
 
 function Cover({ album, className }: { album: MusicAlbum; className?: string }) {
   return (
     <div className={"grid aspect-square place-items-center overflow-hidden rounded-xl bg-muted " + (className || "")}>
-      {album.hasCover ? (
-        <img src={home.coverUrl(album.id)} alt="" loading="lazy" className="size-full object-cover" />
+      {coverOf(album) ? (
+        <img src={coverOf(album)} alt="" loading="lazy" className="size-full object-cover" />
       ) : (
         <MusicIcon className="size-8 text-muted-foreground/60" aria-hidden="true" />
       )}
@@ -44,24 +51,34 @@ export function Music({ id }: { id?: string }) {
   const [missing, setMissing] = useState(false)
   const [query, setQuery] = useState("")
   const [view, albumId] = (id || "").split(":")
+  const { kept } = useKept()
 
   useEffect(() => {
+    if (KEEPS) loadKept()
     home.music().then(
-      (l) => {
+      async (l) => {
         cache = l
         setLibrary(l)
         setMissing(false)
+        // An album the box has let go (sold, given away, taken out) goes from the phone too.
+        if (KEEPS) {
+          await loadKept()
+          for (const gone of lib.keptGone(keptIds(), l)) letGo(gone).catch(() => {})
+        }
       },
       () => setMissing(true),
     )
   }, [])
 
-  const album = view === "album" ? library?.albums.find((a) => a.id === albumId) : undefined
+  // Away from home the box can't be reached: the albums kept on this phone are the library.
+  const away = KEEPS && missing && !library && kept.length > 0
+  const shown = away ? lib.keptLibrary(kept) : library
+  const album = view === "album" ? shown?.albums.find((a) => a.id === albumId) : undefined
 
   return (
     <Shell tab="music">
-      {album && library ? (
-        <AlbumView library={library} album={album} />
+      {album && shown ? (
+        <AlbumView library={shown} album={album} />
       ) : (
         <>
           <PageTitle title="Music" lead="Your own albums from the Mac or box they live on, and New Zealand radio." />
@@ -75,7 +92,18 @@ export function Music({ id }: { id?: string }) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          {missing && !library ? (
+          {away ? (
+            <>
+              <Alert variant="info">
+                <DownloadIcon />
+                <AlertTitle>Away from home</AlertTitle>
+                <AlertDescription>
+                  {view === "radio" ? "Radio comes through the box, so it’s back on the home Wi-Fi. Your kept albums are under Albums." : "These are the albums kept on this phone. Everything else comes back on the home Wi-Fi."}
+                </AlertDescription>
+              </Alert>
+              {view !== "radio" && <AlbumsView library={shown!} query={query} setQuery={setQuery} />}
+            </>
+          ) : missing && !library ? (
             <NotFound />
           ) : view === "radio" ? (
             <RadioView />
@@ -155,6 +183,7 @@ function AlbumsView({ library, query, setQuery }: { library: MusicLibrary; query
           <ShuffleIcon /> Shuffle all
         </Button>
       </div>
+      {KEEPS && <KeptLine />}
       {albums.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing matches that. Try fewer words.</p>
       ) : (
@@ -174,6 +203,17 @@ function AlbumsView({ library, query, setQuery }: { library: MusicLibrary; query
   )
 }
 
+function KeptLine() {
+  const { kept } = useKept()
+  if (!kept.length) return null
+  const bytes = kept.reduce((n, k) => n + k.bytes, 0)
+  return (
+    <p className="text-sm text-muted-foreground">
+      {kept.length === 1 ? "1 album" : `${kept.length} albums`} kept on this phone ({lib.sizeWords(bytes)}) to play away from home.
+    </p>
+  )
+}
+
 function AlbumView({ library, album }: { library: MusicLibrary; album: MusicAlbum }) {
   const tracks = lib.albumTracks(library, album)
   const { now } = usePlayer()
@@ -188,9 +228,12 @@ function AlbumView({ library, album }: { library: MusicLibrary; album: MusicAlbu
         <Cover album={album} className="w-48 shrink-0 shadow-md" />
         <div className="flex min-w-0 flex-col gap-3">
           <PageTitle title={album.title} lead={[album.artist, album.year, length ? lib.clock(length) : ""].filter(Boolean).join(" · ")} />
-          <Button size="lg" className="self-start" onClick={() => player.play(queue)}>
-            <PlayIcon /> Play
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="lg" onClick={() => player.play(queue)}>
+              <PlayIcon /> Play
+            </Button>
+            {KEEPS && <KeepButton album={album} tracks={tracks} />}
+          </div>
         </div>
       </div>
       <Card>
@@ -210,6 +253,39 @@ function AlbumView({ library, album }: { library: MusicLibrary; album: MusicAlbu
         </CardContent>
       </Card>
     </>
+  )
+}
+
+// Keep an album on the phone to play away from home, or let it go again.
+function KeepButton({ album, tracks }: { album: MusicAlbum; tracks: MusicTrack[] }) {
+  const { kept, saving } = useKept()
+  const here = kept.find((k) => k.album.id === album.id)
+  if (saving?.albumId === album.id)
+    return (
+      <Button size="lg" variant="outline" disabled>
+        <DownloadIcon /> Saving {saving.done} of {saving.total}
+      </Button>
+    )
+  if (here)
+    return (
+      <>
+        <Badge variant="success-light" size="xl">
+          <CheckCircle2Icon /> On this phone, {lib.sizeWords(here.bytes)}
+        </Badge>
+        <Button size="lg" variant="ghost" onClick={() => letGo(album.id).then(() => toast.success("Taken off this phone."), () => toast.error("That didn’t work. Try again."))}>
+          Let go
+        </Button>
+      </>
+    )
+  return (
+    <Button
+      size="lg"
+      variant="outline"
+      disabled={Boolean(saving)}
+      onClick={() => keepAlbum(album, tracks).then(() => toast.success("Kept on this phone. It plays away from home now."), (e) => toast.error(e instanceof Error ? e.message : "That didn’t come across. Try again at home."))}
+    >
+      <DownloadIcon /> Keep on this phone
+    </Button>
   )
 }
 
