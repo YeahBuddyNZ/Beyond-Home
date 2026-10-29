@@ -95,6 +95,8 @@ export async function mockMusicWhere() {
 	return { address: '', found: true };
 }
 export async function mockMusic() {
+	// ?preview&away: the box can't be reached, as on a phone away from home.
+	if (/[?&]away/.test(location.search)) throw new Error('Beyond Home didn’t answer.');
 	const albums = SONGS.map(([id, title, artist, year, songs]) => ({ id, title, artist, year, hasCover: false, added: year, trackIds: songs.map((_, i) => songId(id, i)) }));
 	const tracks = SONGS.flatMap(([id, album, artist, , songs]) => songs.map((title, i) => ({ id: songId(id, i), title, artist, album, albumId: id, track: i + 1, duration: 180 + i * 17 })));
 	return { name: 'Our music', albums, tracks, recent: [{ id: songId('a0000000bb01', 0), at: Date.now() }] };

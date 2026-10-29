@@ -32,3 +32,6 @@ export function findAlbums(library: MusicLibrary | null, query: string): MusicAl
 export function boxAddress(text: string): string | null
 export function boxTries(last?: string | null): string[]
 export function phoneName(userAgent: string): string
+export function keptGone(keptIds: string[], library: MusicLibrary | null): string[]
+export function keptLibrary(kept: { album: MusicAlbum; tracks: MusicTrack[] }[]): MusicLibrary
+export function sizeWords(bytes: number): string

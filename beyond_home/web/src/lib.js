@@ -282,3 +282,34 @@ export function phoneName(userAgent) {
 	if (/Android/.test(ua)) return 'Android phone';
 	return 'Phone';
 }
+
+// ---------- kept on the phone ----------
+// Albums kept on the phone to play away from home. Only ever a copy of what the household's own box holds.
+
+// Kept albums the box no longer has (sold, given away or taken out): the phone's copy goes too. Only from a library
+// that loaded with something in it, so a box mid-way through setting up never wipes the phone.
+export function keptGone(keptIds, library) {
+	const albums = library?.albums || [];
+	if (!albums.length) return [];
+	const have = new Set(albums.map((a) => a.id));
+	return (keptIds || []).filter((id) => !have.has(id));
+}
+
+// What the Music tab shows away from home: just the kept albums, as a library of their own.
+export function keptLibrary(kept) {
+	const list = kept || [];
+	return {
+		name: 'On this phone',
+		albums: list.map((k) => k.album),
+		tracks: list.flatMap((k) => k.tracks),
+		recent: [],
+	};
+}
+
+// 850 KB, 34 MB, 1.2 GB.
+export function sizeWords(bytes) {
+	const b = Math.max(0, Number(bytes) || 0);
+	if (b < 1e6) return `${Math.max(1, Math.round(b / 1e3))} KB`;
+	if (b < 1e9) return `${Math.round(b / 1e6)} MB`;
+	return `${(b / 1e9).toFixed(1).replace(/\.0$/, '')} GB`;
+}
