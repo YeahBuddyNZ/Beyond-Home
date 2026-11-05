@@ -56,3 +56,6 @@ it runs.
   away from home the Music tab is those albums, and one the box no longer has goes from the phone (`keptGone`). Xcode Cloud runs `app/ios/App/ci_scripts/ci_post_clone.sh`. Never `?preview` in a phone build.
 - Checks: `sh tests/run.sh`; `cd beyond_home/web && npm run build:hub && npm run build:phone`. CI also builds the Docker image.
 - Not yet run on a real Home Assistant box: say so when reporting.
+
+## Version control
+- Version control follows `docs/VERSION-CONTROL.md` (Beyond standard): work on a branch, push `wip/*` for unfinished work at the end of every session, never commit keys or signing files, and run `git config core.hooksPath .githooks` once per clone. Apple platform design follows Apple's Human Interface Guidelines; web UI is ReUI only.
