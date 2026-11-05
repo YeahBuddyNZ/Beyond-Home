@@ -1,0 +1,15 @@
+{
+  "originHash" : "8b1e70d706b56aa8ad8bc2e9d2dbe38b995dcfbf7abe8c9d1ac5e36dbcd710a5",
+  "pins" : [
+    {
+      "identity" : "capacitor-swift-pm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/YeahBuddyNZ/capacitor-swift-pm.git",
+      "state" : {
+        "revision" : "0b6882e9a3288342aacf36348e5a94e4f1dd7b13",
+        "version" : "8.5.2"
+      }
+    }
+  ],
+  "version" : 3
+}
