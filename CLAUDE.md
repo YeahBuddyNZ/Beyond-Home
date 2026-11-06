@@ -56,3 +56,6 @@ it runs.
   away from home the Music tab is those albums, and one the box no longer has goes from the phone (`keptGone`). Xcode Cloud runs `app/ios/App/ci_scripts/ci_post_clone.sh`. Never `?preview` in a phone build.
 - Checks: `sh tests/run.sh`; `cd beyond_home/web && npm run build:hub && npm run build:phone`. CI also builds the Docker image.
 - Not yet run on a real Home Assistant box: say so when reporting.
+
+## UI standard
+- Any screen or component change follows `docs/ui-standard.md` (the Beyond UI standard, 30 rules: layout and touch checks plus hierarchy, contrast, proximity, alignment, progressive disclosure, feedback, error recovery, user control and intuitive patterns). Look at the result at 375px and 1280px, light and dark, before calling it done. Master copy: beyond-agent-hq `docs/ui-standard.md`.
