@@ -30,3 +30,6 @@ export type Station = { id: string; name: string; url: string; logo: string; tow
 export type MusicWhere = { address: string; found: boolean }
 // What plays: a song from the music server, or a radio station's own stream.
 export type Playable = { key: string; title: string; by: string; src: string; cover?: string; trackId?: string }
+
+// Apple Home from the box (server/apple.mjs): off, waiting for an iPhone to add it (with its code), or on.
+export type AppleHome = { state: "off" | "pairing" | "on"; code?: string; qr?: boolean; buttons?: number }

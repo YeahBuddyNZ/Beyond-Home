@@ -3,6 +3,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TvsCard } from "@/components/tvs-card"
 import { FamilyCard } from "@/components/family-card"
+import { AppleCard } from "@/components/apple-card"
 import { MusicCard } from "@/components/music-card"
 import { PageTitle, Shell } from "./Shell"
 import { PhoneCard } from "@/components/phone-card"
@@ -14,6 +15,7 @@ export function Settings() {
       <PageTitle title="Settings" />
       {PHONE ? <PhoneCard /> : <TvsCard />}
       {!PHONE && <FamilyCard />}
+      {!PHONE && <AppleCard />}
       {!PHONE && <MusicCard />}
       <Card>
         <CardHeader>

@@ -126,3 +126,18 @@ export async function mockUnlinkFamily() {
 	family = { state: 'off' };
 	return { ...family };
 }
+
+// Apple Home: a made-up code, then added after a few looks, like somebody scanning it with an iPhone.
+let apple = { state: 'off' };
+let appleLooks = 0;
+export async function mockApple() {
+	if (apple.state === 'pairing' && ++appleLooks > 3) apple = { state: 'on', buttons: 9 };
+	return { ...apple };
+}
+export async function mockAppleDo(what) {
+	await new Promise((r) => setTimeout(r, 300));
+	appleLooks = 0;
+	if (what === 'stop') apple = { state: 'off' };
+	else if (what === 'start') apple = { state: 'pairing', code: '123-45-678', qr: false, buttons: 9 };
+	return { ...apple };
+}
