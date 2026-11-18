@@ -2,6 +2,7 @@ import { ExternalLinkIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TvsCard } from "@/components/tvs-card"
+import { FamilyCard } from "@/components/family-card"
 import { MusicCard } from "@/components/music-card"
 import { PageTitle, Shell } from "./Shell"
 import { PhoneCard } from "@/components/phone-card"
@@ -12,6 +13,7 @@ export function Settings() {
     <Shell tab="settings">
       <PageTitle title="Settings" />
       {PHONE ? <PhoneCard /> : <TvsCard />}
+      {!PHONE && <FamilyCard />}
       {!PHONE && <MusicCard />}
       <Card>
         <CardHeader>

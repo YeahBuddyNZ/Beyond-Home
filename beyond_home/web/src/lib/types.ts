@@ -17,6 +17,9 @@ export type Thing = {
 export type Room = { id: string; name: string; things: Thing[] }
 export type Snapshot = { rooms: Room[]; time: number }
 export type Call = { domain: string; service: string; data: Record<string, unknown> }
+// Beyond Family from the box (server/family.mjs): off, a code to type in the app, or linked.
+export type FamilyLink = { state: "off" | "waiting" | "expired" | "linked"; code?: string; minutes?: number; household?: string; people?: number }
+
 export type PairedTv = { id: string; name: string; kind: "tv" | "phone"; added: number }
 
 // The family's music, from the Beyond Music server through Beyond Home (server/music.mjs). Only what the tab uses.

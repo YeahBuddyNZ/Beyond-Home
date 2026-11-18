@@ -9,6 +9,7 @@ import { refuse } from './allow.mjs';
 import { ROOMS_TEMPLATE, buildSnapshot } from './snapshot.mjs';
 import { cleanAddress, createMusic, musicPath } from './music.mjs';
 import { approve, listTvs, phonePath, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
+import { createFamily } from './family.mjs';
 
 const PORT = Number(process.env.PORT || 8099);
 const WWW = process.env.WWW || '/app/www';
@@ -47,6 +48,22 @@ const MUSIC = join(DATA, 'music.json');
 let musicAt = '';
 readFile(MUSIC, 'utf8').then((t) => (musicAt = JSON.parse(t).address || ''), () => {});
 const music = createMusic({ saved: () => musicAt });
+
+// Beyond Family, for the grown-ups away from home (server/family.mjs). Off until somebody links it in Settings.
+// An ask from away is built and checked exactly like a TV's.
+const family = createFamily({
+	file: join(DATA, 'family.json'),
+	url: process.env.FAMILY_URL || undefined,
+	snapshot: async () => tvSnapshot(await snapshot()),
+	act: async (ask) => {
+		const out = tvCalls(await snapshot(), ask);
+		if (out.error) return out.error;
+		for (const c of out.calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
+		return null;
+	},
+	log: (where, why) => console.error('family', where, why)
+});
+family.resume();
 
 const send = (res, code, body, type = 'application/json', extra = {}) => {
 	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
@@ -111,6 +128,15 @@ createServer(async (req, res) => {
 			if (remove(state, JSON.parse(await readBody(req)).id)) await save();
 			return send(res, 200, { tvs: listTvs(state) });
 		}
+		if (path === '/api/family' && req.method === 'GET') return (await family.loaded, send(res, 200, family.status()));
+		if (path === '/api/family/start' && req.method === 'POST') {
+			try {
+				return send(res, 200, await family.start());
+			} catch {
+				return send(res, 502, { error: 'Beyond Family didn’t answer. Check the internet at home and try again.' });
+			}
+		}
+		if (path === '/api/family/stop' && req.method === 'POST') return send(res, 200, await family.stop());
 		if (path === '/api/music/where' && req.method === 'GET') return send(res, 200, { address: musicAt, found: Boolean(await music.find()) });
 		if (path === '/api/music/where' && req.method === 'POST') {
 			const address = cleanAddress(JSON.parse(await readBody(req)).address);

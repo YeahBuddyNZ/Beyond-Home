@@ -12,12 +12,14 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 - **One remote.** Volume goes wherever the sound is coming from: the receiver when it is on, otherwise the TV, otherwise a speaker. Power, mute and the input in the same place.
 - **Moments.** Movie night (TV and receiver on, sound to the TV, lights down), Morning, Bedtime, Everything off and Party (lights bright and in colour; when Beyond TV runs a party, the colours change with its music and go back to warm white after). A room only shows the moments that fit it.
 - **Each thing in the room.** On and off, lights brighter and dimmer, heat pumps warmer and cooler by half a degree.
-- **Works inside the house.** Nothing goes through the internet, and every device still works with its own remote and app.
+- **Works inside the house.** Nothing goes through the internet unless you link Beyond Family (below), and every device still works with its own remote and app.
 - **The way back.** Home Assistant's own screens are under *Settings*, *Advanced*, for anything Beyond Home doesn't do yet.
 - **Your home on the TV.** [Beyond™ TV](https://github.com/YeahBuddyNZ/Beyond.TV) gets a Home row: every room's line, its Moments and the one remote, from the sofa. The TV finds the box by itself and shows a code; type it in *Settings*, *TVs*. Taking a TV off there stops it straight away.
 - **Your music.** A *Music* tab plays the family's own albums and New Zealand radio, with a player bar that follows you round the app and the phone's lock screen buttons. The music lives on a Mac, a Raspberry Pi or this box, wherever [Beyond Music](https://github.com/YeahBuddyNZ/Beyond-Music) runs (it copies CDs too). On this box it's found by itself; for a Mac, type its address in *Settings*, *Music*. Beyond Home passes the asks along (`server/music.mjs`, its own short list of paths), so it works however Home Assistant is opened.
 
 - **On your phone.** The Beyond Home app for iPhone finds the box on your home Wi-Fi and shows a code; type it on the box under *Settings*, *TVs and phones*, once. Then the rooms, the remote and your music are in your pocket anywhere in the house. *Forget this box* under *Settings* lets it go, and the box can take a phone off too. On an album, *Keep on this phone* copies it to the phone so it plays away from home; *Let go* takes it off, and an album taken off the box (a CD sold or given away) leaves the phone too. (Coming to TestFlight; not yet tried on a real iPhone.)
+
+- **Your home from away.** *Settings*, *Link to Beyond™ Family* shows a code; a grown-up types it in the Beyond Family app under *Family*, *Your home*. Then the grown-ups can see every room from anywhere, start a moment, turn the sound down, or switch something off they left on. The box calls out and only does the same named things a TV can, checked by its own list; it never sends what anybody is watching. *Unlink* on either side stops it. Off until somebody taps Link ([ADR 0003](docs/adr/0003-the-box-links-to-beyond-family.md)). Not yet tried on a real box.
 
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 

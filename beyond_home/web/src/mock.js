@@ -108,3 +108,21 @@ export async function mockRadio() {
 		{ id: 'r3', name: 'The Harbour FM', url: '', logo: '', town: 'Tauranga', rnz: false },
 	];
 }
+
+// Beyond Family: a made-up code, then linked after a few looks, like a grown-up typing it in.
+let family = { state: 'off' };
+let looks = 0;
+export async function mockFamily() {
+	if (family.state === 'waiting' && ++looks > 3) family = { state: 'linked', household: 'The Example Family', people: 4 };
+	return { ...family };
+}
+export async function mockLinkFamily() {
+	await new Promise((r) => setTimeout(r, 300));
+	looks = 0;
+	family = { state: 'waiting', code: 'KQXRMB', minutes: 10 };
+	return { ...family };
+}
+export async function mockUnlinkFamily() {
+	family = { state: 'off' };
+	return { ...family };
+}
