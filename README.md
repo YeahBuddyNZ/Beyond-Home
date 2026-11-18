@@ -18,11 +18,8 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 - **Your music.** A *Music* tab plays the family's own albums and New Zealand radio, with a player bar that follows you round the app and the phone's lock screen buttons. The music lives on a Mac, a Raspberry Pi or this box, wherever [Beyond Music](https://github.com/YeahBuddyNZ/Beyond-Music) runs (it copies CDs too). On this box it's found by itself; for a Mac, type its address in *Settings*, *Music*. Beyond Home passes the asks along (`server/music.mjs`, its own short list of paths), so it works however Home Assistant is opened.
 
 - **On your phone.** The Beyond Home app for iPhone finds the box on your home Wi-Fi and shows a code; type it on the box under *Settings*, *TVs and phones*, once. Then the rooms, the remote and your music are in your pocket anywhere in the house. *Forget this box* under *Settings* lets it go, and the box can take a phone off too. On an album, *Keep on this phone* copies it to the phone so it plays away from home; *Let go* takes it off, and an album taken off the box (a CD sold or given away) leaves the phone too. (Coming to TestFlight; not yet tried on a real iPhone.)
-<<<<<<< HEAD
 
 - **Your home from away.** *Settings*, *Link to Beyond™ Family* shows a code; a grown-up types it in the Beyond Family app under *Family*, *Your home*. Then the grown-ups can see every room from anywhere, start a moment, turn the sound down, or switch something off they left on. The box calls out and only does the same named things a TV can, checked by its own list; it never sends what anybody is watching. *Unlink* on either side stops it. Off until somebody taps Link ([ADR 0003](docs/adr/0003-the-box-links-to-beyond-family.md)). Not yet tried on a real box.
-=======
->>>>>>> b46c6a9e0749570333ed034ea7a9dbe7f06f678b
 
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 
