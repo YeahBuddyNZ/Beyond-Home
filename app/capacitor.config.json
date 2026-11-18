@@ -1,5 +1,5 @@
 {
-  "appId": "nz.gobeyond.home",
+  "appId": "nz.gobeyond.homeapp",
   "appName": "Beyond Home",
   "webDir": "../beyond_home/web/dist-phone",
   "backgroundColor": "#F7F6F2",

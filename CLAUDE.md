@@ -46,7 +46,7 @@ it runs.
   `node --test` runs it: what a thing is, a room's line, where the remote's volume goes, the moments. Every call it can
   build must pass `allow.mjs` (a test checks). `?preview` runs against `web/src/mock.js` (made-up names only, never
   real family names); `npm run build:hub` leaves it out.
-- **The phone app** (`app/`, bundle `nz.gobeyond.home`, team Z2W739FC4J): a Capacitor 8 shell around
+- **The phone app** (`app/`, bundle `nz.gobeyond.homeapp`, team RJNT8XCCU9 (Global Support Limited, since 18/11/2026; the old `nz.gobeyond.home` is held by the old Liquid50 account)): a Capacitor 8 shell around
   `npm run build:phone` (`vite --mode phone`, out to `dist-phone/`), bundled inside the app because the box is on the
   house network, not the internet. `web/src/phone.ts` finds the box (`/tv/hi` at `beyond-home.local`,
   `homeassistant.local`, `homeassistant`, or a typed address) and pairs by a code typed on the box under Settings, TVs
