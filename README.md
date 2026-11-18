@@ -21,6 +21,8 @@ Beyond Home is the home side of the Beyond tools, alongside [Beyond™ TV](https
 
 - **Your home from away.** *Settings*, *Link to Beyond™ Family* shows a code; a grown-up types it in the Beyond Family app under *Family*, *Your home*. Then the grown-ups can see every room from anywhere, start a moment, turn the sound down, or switch something off they left on. The box calls out and only does the same named things a TV can, checked by its own list; it never sends what anybody is watching. *Unlink* on either side stops it. Off until somebody taps Link ([ADR 0003](docs/adr/0003-the-box-links-to-beyond-family.md)). Not yet tried on a real box.
 
+- **Apple Home and the Apple HomeView.** *Settings*, *Show in Apple Home* puts your rooms in Apple's Home app, so an Apple HomeView on the wall, an iPhone, an Apple Watch and Siri can run them too. Each room's moments come as buttons, so "Hey Siri, Lounge Movie night" works, and the box still does the moment itself. Scan the code it shows with an iPhone's camera, or type it in the Home app. *Update Apple Home* after adding a room; *Take out of Apple Home* removes it. Off until somebody taps it ([ADR 0004](docs/adr/0004-apple-home-from-the-box.md)). Not yet tried on a real box.
+
 The plan, with what NZ homes have and what works without the cloud, is in [docs/plan.md](docs/plan.md).
 
 ## Installing (Home Assistant)

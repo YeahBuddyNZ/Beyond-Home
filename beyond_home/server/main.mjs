@@ -10,6 +10,7 @@ import { ROOMS_TEMPLATE, buildSnapshot } from './snapshot.mjs';
 import { cleanAddress, createMusic, musicPath } from './music.mjs';
 import { approve, listTvs, phonePath, remove, startPairing, tvCalls, tvSnapshot, who } from './tvs.mjs';
 import { createFamily } from './family.mjs';
+import { createApple, haSocket } from './apple.mjs';
 
 const PORT = Number(process.env.PORT || 8099);
 const WWW = process.env.WWW || '/app/www';
@@ -64,6 +65,20 @@ const family = createFamily({
 	log: (where, why) => console.error('family', where, why)
 });
 family.resume();
+
+// Apple Home (server/apple.mjs): off until somebody taps Show in Apple Home in Settings. A moment pressed there is
+// built and checked like a tap in the app.
+const apple = createApple({
+	file: join(DATA, 'apple.json'),
+	rest: ha,
+	socket: () => haSocket(process.env.HA_WS || HA.replace(/^http/, 'ws').replace(/\/api$/, '/websocket'), TOKEN),
+	snapshot,
+	run: async (calls) => {
+		for (const c of calls) await ha('/services/' + c.domain + '/' + c.service, { method: 'POST', body: JSON.stringify(c.data) });
+	},
+	log: (where, why) => console.error('apple', where, why)
+});
+apple.resume();
 
 const send = (res, code, body, type = 'application/json', extra = {}) => {
 	res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
@@ -137,6 +152,21 @@ createServer(async (req, res) => {
 			}
 		}
 		if (path === '/api/family/stop' && req.method === 'POST') return send(res, 200, await family.stop());
+		if (path === '/api/apple' && req.method === 'GET') return send(res, 200, await apple.status());
+		if (path === '/api/apple/qr' && req.method === 'GET') {
+			const qr = await apple.qr();
+			if (!qr) return send(res, 404, { error: 'No code to show' });
+			return send(res, 200, Buffer.from(await qr.arrayBuffer()), 'image/svg+xml');
+		}
+		for (const [p, fn] of [['/api/apple/start', 'start'], ['/api/apple/refresh', 'refresh'], ['/api/apple/stop', 'stop']]) {
+			if (path !== p || req.method !== 'POST') continue;
+			try {
+				return send(res, 200, await apple[fn]());
+			} catch (e) {
+				console.error('apple', fn, e.message);
+				return send(res, 502, { error: 'Home Assistant couldn’t do that just now. Try again in a moment.' });
+			}
+		}
 		if (path === '/api/music/where' && req.method === 'GET') return send(res, 200, { address: musicAt, found: Boolean(await music.find()) });
 		if (path === '/api/music/where' && req.method === 'POST') {
 			const address = cleanAddress(JSON.parse(await readBody(req)).address);

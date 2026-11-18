@@ -1,4 +1,4 @@
-import type { Call, PairedTv, FamilyLink, Snapshot } from "@/lib/types"
+import type { AppleHome, Call, PairedTv, FamilyLink, Snapshot } from "@/lib/types"
 export function mockSnapshot(): Promise<Snapshot>
 export function mockAct(calls: Call[]): Promise<void>
 export function mockTvs(): Promise<PairedTv[]>
@@ -11,3 +11,5 @@ import type { MusicLibrary, MusicWhere, Station } from "@/lib/types"
 export function mockMusicWhere(): Promise<MusicWhere>
 export function mockMusic(): Promise<MusicLibrary>
 export function mockRadio(): Promise<Station[]>
+export function mockApple(): Promise<AppleHome>
+export function mockAppleDo(what: "start" | "refresh" | "stop"): Promise<AppleHome>

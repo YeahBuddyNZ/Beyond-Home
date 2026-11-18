@@ -3,7 +3,7 @@
 // box's house door instead (src/phone.ts), with its own key.
 // ?preview swaps the box for the stand-in in mock.js, so the app can be looked at in a browser.
 
-import type { Call, FamilyLink, MusicLibrary, MusicWhere, PairedTv, Snapshot, Station } from "@/lib/types"
+import type { AppleHome, Call, FamilyLink, MusicLibrary, MusicWhere, PairedTv, Snapshot, Station } from "@/lib/types"
 import { PHONE, forget, phoneAsk, phoneMedia } from "@/phone"
 
 // A build for the box (vite build --mode hub) leaves the stand-in out altogether.
@@ -66,6 +66,16 @@ export const home = {
     if (PREVIEW) return (await import("./mock.js")).mockUnlinkFamily()
     return answer(await fetch("./api/family/stop", { method: "POST" }))
   },
+  // Apple Home (server/apple.mjs): off until somebody taps Show in Apple Home here.
+  async apple(): Promise<AppleHome> {
+    if (PREVIEW) return (await import("./mock.js")).mockApple()
+    return answer(await fetch("./api/apple", { cache: "no-store" }))
+  },
+  async appleDo(what: "start" | "refresh" | "stop"): Promise<AppleHome> {
+    if (PREVIEW) return (await import("./mock.js")).mockAppleDo(what)
+    return answer(await fetch("./api/apple/" + what, { method: "POST" }))
+  },
+  appleQr: () => (PREVIEW ? "" : "./api/apple/qr?t=" + Date.now()),
   // The family's music, through the box (server/music.mjs) so it works however Home Assistant is opened.
   async musicWhere(): Promise<MusicWhere> {
     if (PREVIEW) return (await import("./mock.js")).mockMusicWhere()
