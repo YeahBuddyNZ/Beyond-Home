@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Beyond Home finds your Beyond Home box on your home Wi-Fi so this phone can control your rooms and play your music.</string>
+	<string>Home finds your Beyond Home box on your home Wi-Fi so this phone can control your rooms and play your music.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
